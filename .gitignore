@@ -1,0 +1,23 @@
+# Entornos virtuales
+venv/
+.env
+*.env
+
+# Archivos de configuración local
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+
+# ChromaDB local (si la usas en disco)
+backend/chroma_db/
+
+# VSCode y otros editores
+.vscode/
+.idea/
+
+# Node modules (si algún día usas npm en la extensión)
+node_modules/
+
+# Archivos del sistema
+Thumbs.db
