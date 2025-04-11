@@ -6,12 +6,38 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- Barra de pestañas -->
   <div class="tabs">
+    <button class="tab-button" id="btn-home">🏠 Inicio</button>
     <button class="tab-button" id="btn-result">📊 Análisis</button>
     <button class="tab-button" id="btn-chat">💬 Chat IA</button>
   </div>
-  <div class="content">
-    <p>Selecciona una herramienta para continuar.</p>
+
+  <!-- Sección Inicio -->
+  <div class="section" id="section-home">
+    <div class="content">
+      <h2>Analizar Noticia</h2>
+      <textarea id="input-text" placeholder="Pega aquí el texto de la noticia..."></textarea>
+      <button id="send-btn">Enviar al backend</button>
+      <p id="status-msg"></p>
+    </div>
+  </div>
+
+  <!-- Sección Resultados -->
+  <div class="section hidden" id="section-result">
+    <div class="content">
+      <h2>Resultado del Análisis</h2>
+      <p id="result-text">Aquí se mostrará el análisis...</p>
+    </div>
+  </div>
+
+  <!-- Sección Chat -->
+  <div class="section hidden" id="section-chat">
+    <div class="content">
+      <h2>Chat IA</h2>
+      <p>Próximamente: chat con GPT...</p>
+    </div>
   </div>
 
   <script src="popup.js"></script>
