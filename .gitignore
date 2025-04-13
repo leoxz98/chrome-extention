@@ -9,9 +9,6 @@ venv/
 __pycache__/
 .DS_Store
 
-# ChromaDB local (si la usas en disco)
-backend/chroma_db/
-
 # VSCode y otros editores
 .vscode/
 .idea/

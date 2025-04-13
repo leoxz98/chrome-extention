@@ -12,12 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatBtn = document.getElementById("btn-chat");
   const sendBtn = document.getElementById("send-btn");
   const autoBtn = document.getElementById("auto-btn");
+  const clearBtn = document.getElementById("clear-btn");
 
   const textarea = document.getElementById("input-text");
   const resultOutput = document.getElementById("result-text");
   const statusMsg = document.getElementById("status-msg");
 
-  // Función para mostrar secciones
+  // Mostrar sección activa
   function showSection(sectionId) {
     sectionHome.classList.add("hidden");
     sectionResult.classList.add("hidden");
@@ -36,12 +37,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Mostrar inicio al cargar
-  showSection("home");
+  // Restaurar datos desde chrome.storage al cargar
+  chrome.storage.local.get(["savedText", "savedResult"], (data) => {
+    if (data.savedText) {
+      textarea.value = data.savedText;
+      canAccessResult = true;
+      canAccessChat = true;
+    }
+
+    if (data.savedResult) {
+      resultOutput.textContent = data.savedResult;
+    }
+  });
+
+  // Guardar automáticamente mientras el usuario escribe
+  textarea.addEventListener("input", () => {
+    chrome.storage.local.set({ savedText: textarea.value });
+  });
 
   // Navegación
   homeBtn.addEventListener("click", () => showSection("home"));
-
   resultBtn.addEventListener("click", () => {
     if (canAccessResult) {
       showSection("result");
@@ -49,7 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Primero debes enviar un texto para analizar.");
     }
   });
-
   chatBtn.addEventListener("click", () => {
     if (canAccessChat) {
       showSection("chat");
@@ -70,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMsg.textContent = "⏳ Enviando...";
 
     try {
-      const response = await fetch("http://localhost:8000/analyze", {
+      const response = await fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -79,7 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await response.json();
-      resultOutput.textContent = data.result;
+      const resultText = JSON.stringify(data.result);
+
+      resultOutput.textContent = resultText;
+      chrome.storage.local.set({ savedResult: resultText });
 
       canAccessResult = true;
       canAccessChat = true;
@@ -92,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Auto-rellenar desde content-script
+  // Botón automático (content-script)
   autoBtn.addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.scripting.executeScript({
@@ -102,21 +119,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Botón borrar todo
+  clearBtn.addEventListener("click", () => {
+    textarea.value = "";
+    resultOutput.textContent = "Aquí se mostrará el análisis...";
+    chrome.storage.local.remove(["savedText", "savedResult"]);
+    canAccessResult = false;
+    canAccessChat = false;
+    statusMsg.textContent = "🧹 Se borraron los datos.";
+  });
+
   // Recibir texto del content-script
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "autoFill") {
       textarea.value = message.content;
+      chrome.storage.local.set({ savedText: message.content });
     }
   });
-});
-
-
-// Escuchar el mensaje con el texto extraído
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "autoFill") {
-    const textarea = document.getElementById("input-text");  // Asegúrate de que este ID exista en tu HTML
-    if (textarea) {
-      textarea.value = message.content;  // Poner el contenido extraído en el campo de texto
-    }
-  }
 });
