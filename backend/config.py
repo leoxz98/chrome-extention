@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings  # Cambia la importación
 
 class Settings(BaseSettings):
     API_GPT: str
+    API_GOOGLE: str
+    ID_GOOGLE: str
     PORT: str
     DEBUG: bool = False  # Valor por defecto si no está en el .env
 
