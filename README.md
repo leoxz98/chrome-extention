@@ -1,7 +1,5 @@
 # Prototipo lectura critica
 
-Breve descripción del proyecto: qué hace, para quién es, y por qué es útil.
-
 ## 🚀 Características
 
 - ✅ Obtener la noticia con un botón
