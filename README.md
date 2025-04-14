@@ -17,5 +17,5 @@ Breve descripción del proyecto: qué hace, para quién es, y por qué es útil.
 
 1. Clona el repositorio:
    ```bash
-   git clone https://github.com/usuario/nombre-del-proyecto.git
+   git clone [https://github.com/usuario/nombre-del-proyecto.git](https://github.com/leoxz98/chrome-extention)
    cd nombre-del-proyecto
