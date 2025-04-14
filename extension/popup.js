@@ -1,8 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Variables auxiliares
   let canAccessResult = false;
   let canAccessChat = false;
 
-  // Elementos
+  // Elementos del html
   const sectionHome = document.getElementById("section-home");
   const sectionResult = document.getElementById("section-result");
   const sectionChat = document.getElementById("section-chat");
@@ -15,10 +16,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearBtn = document.getElementById("clear-btn");
 
   const textarea = document.getElementById("input-text");
-  const resultOutput = document.getElementById("result-text");
+  //const resultOutput = document.getElementById("result-text");
   const statusMsg = document.getElementById("status-msg");
 
-  // Mostrar sección activa
+  const titularElem = document.getElementById("titular");
+  const actoresContainer = document.getElementById("actores-container");
+  const analisisUl = document.getElementById("analisis-critico");
+  const similaresContainer = document.getElementById("noticias-similares");
+
+  // Cambiar entre secciones
   function showSection(sectionId) {
     sectionHome.classList.add("hidden");
     sectionResult.classList.add("hidden");
@@ -46,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (data.savedResult) {
-      resultOutput.textContent = data.savedResult;
+      mostrarResultados(data.savedResult);
     }
   });
 
@@ -72,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Enviar texto al backend
+  // Enviar data al backend
   sendBtn.addEventListener("click", async () => {
     const text = textarea.value.trim();
 
@@ -94,9 +100,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
       const resultText = JSON.stringify(data.result);
-
-      resultOutput.textContent = resultText;
-      chrome.storage.local.set({ savedResult: resultText });
+      
+      //resultOutput.textContent = resultText;
+      mostrarResultados(data)
+      chrome.storage.local.set({ savedResult: data });
 
       canAccessResult = true;
       canAccessChat = true;
@@ -109,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Botón automático (content-script)
+  // Botón para obtener la noticia automatica 
   autoBtn.addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.scripting.executeScript({
@@ -119,17 +126,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Botón borrar todo
+  // borrar todo
   clearBtn.addEventListener("click", () => {
     textarea.value = "";
-    resultOutput.textContent = "Aquí se mostrará el análisis...";
+    //resultOutput.textContent = "Aquí se mostrará el análisis...";
     chrome.storage.local.remove(["savedText", "savedResult"]);
     canAccessResult = false;
     canAccessChat = false;
+    showSection("home");
     statusMsg.textContent = "🧹 Se borraron los datos.";
   });
 
-  // Recibir texto del content-script
+  // Recibir de content-script
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "autoFill") {
       textarea.value = message.content;
@@ -137,3 +145,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+// asdasdsa
+
+function mostrarResultados(data) {
+  // Titular
+  document.getElementById("titular").textContent = data.titular;
+
+  // Actores principales
+  const actoresContainer = document.getElementById("actores-container");
+  actoresContainer.innerHTML = "";
+  data.actores_principales.forEach(actor => {
+    const actorDiv = document.createElement("div");
+    actorDiv.classList.add("actor-card");
+  
+    actorDiv.innerHTML = `
+      <img src="${actor.foto_url}" alt="Foto de ${actor.nombre}" />
+      <h5>${actor.nombre}</h5>
+      <p><em>${actor.perfil}</em></p>
+      <p>${actor.postura}</p>
+    `;
+  
+    actoresContainer.appendChild(actorDiv);
+  });
+  
+
+  // Análisis crítico
+  const analisis = data.analisis_critico;
+  const analisisUl = document.getElementById("analisis-critico");
+  analisisUl.innerHTML = `
+    <li><strong>Sesgo:</strong> ${analisis.sesgo}</li>
+    <li><strong>Lenguaje cargado:</strong> ${analisis.lenguaje_cargado}</li>
+    <li><strong>Propaganda:</strong> ${analisis.propaganda}</li>
+    <li><strong>Falta de información:</strong> ${analisis.faltante_informacion}</li>
+  `;
+
+  // Noticias similares
+  const similaresContainer = document.getElementById("noticias-similares");
+  similaresContainer.innerHTML = "";
+  data.noticias_similares.forEach(not => {
+    const notDiv = document.createElement("div");
+    notDiv.classList.add("noticia");
+
+    notDiv.innerHTML = `
+      <p><strong>${not.titular}</strong></p>
+      <p>${not.resumen}</p>
+      <a href="${not.enlace}" target="_blank">Leer más</a>
+    `;
+
+    similaresContainer.appendChild(notDiv);
+  });
+}

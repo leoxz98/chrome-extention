@@ -10,7 +10,7 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 from langchain.schema import HumanMessage
 from langchain.chains import LLMChain
-
+from fastapi.responses import JSONResponse
 from PIL import Image
 from IPython.display import display
 
@@ -263,4 +263,5 @@ agent = initialize_agent(
 
 def getResponse(query):
     response = agent.run(prompt_template + "Noticia del usuario: " + query)
-    return response
+    return JSONResponse(content=response)
+    #return response

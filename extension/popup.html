@@ -19,10 +19,10 @@
   <!-- Sección Inicio -->
   <div class="section" id="section-home">
     <div class="content">
-      <h2>Analizar Noticia</h2>
+      <h2>Selección de noticia</h2>
       <textarea id="input-text" placeholder="Pega aquí el texto de la noticia..."></textarea>
-      <button id="send-btn">Enviar al backend</button>
-      <button id="auto-btn">Automático</button>
+      <button id="send-btn">Analizar</button>
+      <button id="auto-btn">Copiar automático</button>
       <p id="status-msg"></p>
     </div>
   </div>
@@ -31,7 +31,20 @@
   <div class="section hidden" id="section-result">
     <div class="content">
       <h2>Resultado del Análisis</h2>
-      <p id="result-text">Aquí se mostrará el análisis...</p>
+
+      <div id="result-container">
+        <h3 id="titular"></h3>
+      
+        <h4>Actores principales</h4>
+        <div id="actores-container"></div>
+      
+        <h4>Análisis Crítico</h4>
+        <ul id="analisis-critico"></ul>
+      
+        <h4>Noticias Similares</h4>
+        <div id="noticias-similares"></div>
+      </div>
+      
     </div>
   </div>
 
