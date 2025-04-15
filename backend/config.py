@@ -1,13 +1,13 @@
-from pydantic_settings import BaseSettings  # Cambia la importación
+from pydantic_settings import BaseSettings  
 
 class Settings(BaseSettings):
     API_GPT: str
     API_GOOGLE: str
     ID_GOOGLE: str
     PORT: str
-    DEBUG: bool = False  # Valor por defecto si no está en el .env
+    DEBUG: bool = False  
 
     class Config:
-        env_file = ".env"  # Indicamos el archivo .env
+        env_file = ".env"  # el archivo .env
 
 settings = Settings()

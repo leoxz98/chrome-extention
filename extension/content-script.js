@@ -1,4 +1,3 @@
-// content-script.js
 
 // Función para limpiar el contenido y eliminar los enlaces dentro del artículo
 function cleanContent() {

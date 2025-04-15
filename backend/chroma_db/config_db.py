@@ -3,9 +3,9 @@ from pydantic_settings import BaseSettings  # Cambia la importación
 class Settings(BaseSettings):
     API_GPT: str
     PORT: str
-    DEBUG: bool = False  # Valor por defecto si no está en el .env
+    DEBUG: bool = False  
 
     class Config:
-        env_file = ".env"  # Indicamos el archivo .env
+        env_file = ".env"  #el archivo .env
 
 settings = Settings()

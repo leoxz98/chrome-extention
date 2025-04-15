@@ -28,9 +28,9 @@ async def analyze(req: TextRequest):
     user_text = req.text
     print(f"Texto recibido: {user_text}")
     print("\n  -------- \n")
-    # Llamamos la función de LangChain
-    #analysis_result = getResponse(user_text)
+    result = getResponse(user_text)
     #print(analysis_result)
+
     analysis_result = """{
   "titular": "Israel ampliará su ofensiva 'a la mayor parte de Gaza'",
   "actores_principales": [
@@ -66,8 +66,10 @@ async def analyze(req: TextRequest):
     }
   ]
 }"""
-    parsed_result = json.loads(analysis_result)
-    return parsed_result
+    
+    #parsed_result = json.loads(result)
+    print(type(result))
+    return result
     #return analysis_result
 
 

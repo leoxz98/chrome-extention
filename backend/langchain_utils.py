@@ -13,18 +13,7 @@ from langchain.chains import LLMChain
 from fastapi.responses import JSONResponse
 from PIL import Image
 from IPython.display import display
-
-
-""" ### Que hacer ###
-
-    definir que tools ocupar (ver interfaz) :imagenes y chromadb -ok
-    crear las tools -ok
-    crear template de prompt
-    probar el agente antes de pasar la función al backend
-    integrar al backend
-    probar cosas en front + back
-    
-"""
+import json
 
 # Inicializar cliente con persistencia
 client = chromadb.PersistentClient(path="./chroma_db")  
@@ -46,10 +35,6 @@ def wikipedia_search(query):
     pages = response.json().get('query', {}).get('pages', {})
     page = next(iter(pages.values()), {})
     return page.get('extract', "No se encontró información en Wikipedia.")
-
-import requests
-from PIL import Image
-from IPython.display import display
 
 def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg"):
     api_key = settings.API_GOOGLE
@@ -83,9 +68,10 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
                 f.write(img_response.content)
             
             imagen = Image.open(nombre_archivo)
-            display(imagen)
-            
-            return f"Imagen encontrada y guardada como '{nombre_archivo}'. URL: {url_imagen}"
+            #display(imagen)
+            print("link foto")
+            print(url_imagen)
+            return f"Imagen encontrada en la URL: {url_imagen}"
         else:
             return "No se encontraron imágenes para la consulta."
     
@@ -93,29 +79,30 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
         return f"Error: {str(e)}"
 
 
-
-
 def buscar_por_embeddings(pregunta):
-    # Calcular el embedding de la pregunta
     pregunta_embedding = embeddings.embed_query(pregunta)
-    # Realizar la búsqueda en ChromaDB
     resultados = doc_collection.query(
         query_embeddings=[pregunta_embedding],
-        n_results=1  #cantidad de retorno
+        n_results=2
     )
-    # Formatear los resultados
-    documentos_relevantes = [
-        {"documento": doc, "metadatos": meta}
-        for doc, meta in zip(resultados["documents"], resultados["metadatas"])
-    ]
-    #print(documentos_relevantes) # no tan bueno
-    # Mejor incluir separador de noticias con strings
+
+    docs = resultados.get("documents", [[]])[0]
+    metas = resultados.get("metadatas", [[]])[0]
+
+    if not docs:
+        return "No se encontraron noticias similares."
+
     r = ""
-    for i in range(len(resultados["documents"][0])):
-        r += f"Noticia {i+1} :"
-        r += resultados["documents"][0][i] + " | "
-        #print(resultados["metadatas"][0][i])
-    return r  # se debe devolver string no lista ni diccoionarios
+    for i in range(len(docs)):
+        titulo = metas[i].get("title", "Sin título")
+        fecha = metas[i].get("date", "Sin fecha")
+        link = metas[i].get("link", "Sin enlace")
+        texto = docs[i]
+
+        r += f"Noticia {i+1}: {titulo} | {fecha} | {link} | {texto}\n"
+
+    return r
+
         
 # Crear una Tool para LangChain
 buscar_por_embeddings_tool = Tool(
@@ -124,18 +111,11 @@ buscar_por_embeddings_tool = Tool(
     description="Busca documentos relevantes en ChromaDB utilizando embeddings calculados de la pregunta."
 )
 
-
 # Función para búsqueda en ChromaDB
 def chromadb_search(query):
-    """
-    Busca en ChromaDB documentos relevantes utilizando embeddings.
-    """
     resultados = buscar_por_embeddings(query, doc_collection, top_n=3)  # Función previamente definida
     return "\n".join([f"Noticia {i+1}:\nDocumento: {doc['documento']}\nMetadatos: {doc['metadatos']}\n{'-'*20}" 
                       for i, doc in enumerate(resultados)])
-
-
-
 
 # Crear las herramientas
 tools = [
@@ -148,8 +128,6 @@ tools = [
         """
     )
 ]
-
-
 
 # Crear las herramientas
 tools = [
@@ -201,7 +179,7 @@ Eres un agente de inteligencia artificial que responde en español. El usuario t
 ### Herramientas disponibles:
 - `Wikipedia Search`: para obtener información sobre personas mencionadas.
 - `buscar_y_mostrar_magen`: para encontrar imágenes de los actores principales.
-- `buscar_por_embeddings`: para recuperar noticias similares de una base de datos.
+- `buscar_por_embeddings`: para recuperar noticias similares de una base de datos (esta herramienta devuelve: titular, noticia, fecha y enlace).
 
 ### Reglas importantes:
 - Solo utiliza la información proporcionada por el usuario o recuperada con las herramientas indicadas.
@@ -240,13 +218,9 @@ Eres un agente de inteligencia artificial que responde en español. El usuario t
 """
 
 llm = ChatOpenAI(temperature=0.7, openai_api_key=settings.API_GPT)
-
-
-# Crear el PromptTemplate
 prompt = PromptTemplate(input_variables=["query"], template=prompt_template)
 memory = ConversationBufferWindowMemory(k=5)
 
-# Crear el agente usando `initialize_agent`
 agent = initialize_agent(
     tools=tools,
     llm=llm,
@@ -256,12 +230,15 @@ agent = initialize_agent(
     verbose=True
 )
 
-# https://aurora-israel.co.il/una-preocupante-encuesta-revela-las-actitudes-negativas-de-los-estadounidenses-hacia-israel/
-#response = agent.run(prompt_template + "Noticia del usuario: " + query)
-#print("HERE \n")
-#print(response)
-
 def getResponse(query):
     response = agent.run(prompt_template + "Noticia del usuario: " + query)
-    return JSONResponse(content=response)
-    #return response
+
+    try:
+        parsed = json.loads(response) 
+        return JSONResponse(content=parsed)
+    except json.JSONDecodeError as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Respuesta del modelo no es JSON válido", "detalle": str(e)}
+        )
+

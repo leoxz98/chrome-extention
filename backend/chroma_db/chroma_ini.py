@@ -6,7 +6,7 @@ client = chromadb.PersistentClient(path=".")
 # Asegura la existencia de la colección (la crea solo si no existe)
 collection = client.get_or_create_collection(
     name="prototipoDB",
-    metadata={"dimension": 1536}  # Esto solo se aplica si se crea por primera vez
+    metadata={"dimension": 1536}
 )
 
 # Verificar el estado de la colección
@@ -20,7 +20,7 @@ def savedocs():
     import pandas as pd
     import uuid
     embeddings = OpenAIEmbeddings(openai_api_key=settings.API_GPT)
-    df = pd.read_csv("noticias.csv",encoding="utf-8",sep=';')
+    df = pd.read_csv("noticias2.csv",encoding="utf-8",sep=';')
     print("xd")
     print(df.columns)
 
@@ -43,10 +43,10 @@ def savedocs():
         
         # Agregar el documento a ChromaDB
         collection.add(
-            ids=[unique_id],  # Usar UUID como ID único
-            documents=[texto],  # Documento principal
-            embeddings=[embedding],  # Embedding generado
-            metadatas=[metadatos]  # Metadatos asociados
+            ids=[unique_id],  
+            documents=[texto],  
+            embeddings=[embedding],  
+            metadatas=[metadatos]  
         )
 
     print("Ok!!")
@@ -57,12 +57,10 @@ results = collection.get(include=["documents", "metadatas", "embeddings"])
 
 # Mostrar resultados
 for i, doc in enumerate(results['documents']):
-    print(f"\nDocumento {i+1}:")
     print(f"ID: {results['ids'][i]}")
-    print(f"Texto: {doc}")
     print(f"Metadata: {results['metadatas'][i]}")
-    # Puedes imprimir embeddings si los necesitas también
-    # print(f"Embedding: {results['embeddings'][i]}")
+    print("\n")
+
 
 
 
