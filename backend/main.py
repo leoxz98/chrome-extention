@@ -28,48 +28,74 @@ async def analyze(req: TextRequest):
     user_text = req.text
     print(f"Texto recibido: {user_text}")
     print("\n  -------- \n")
-    result = getResponse(user_text)
-    #print(analysis_result)
+    r = getResponse(user_text)
 
-    analysis_result = """{
-  "titular": "Israel ampliará su ofensiva 'a la mayor parte de Gaza'",
+    result = {
+  "titular": "Netanyahu aseguró que Israel trabaja en un acuerdo para liberar a diez de los rehenes de Hamas en Gaza (EFE/ARCHIVO)",
   "actores_principales": [
     {
-      "nombre": "Israel Katz",
-      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Israel_Katz_on_July_3%2C_2024_%28cropped%29.jpg",
-      "postura": "El ministro israelí de Defensa, Israel Katz, anunció la ampliación de la ofensiva y emitió una orden de evacuación para los residentes de Jan Yunis en Gaza.",
-      "perfil": "Ministro de Defensa de Israel, miembro de la Knéset por el Likud."
+      "nombre": "Benjamin Netanyahu",
+      "foto_url": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQnMVOeWCJQV5i2WYXFo4v1-itSFGW00dsY8THM_qVbnLE2U2PH",
+      "postura": "buena",
+      "perfil": "Político, Primer Ministro de Israel"
     },
     {
-      "nombre": "Leo rodriguez",
-      "foto_url": "https://cdn-icons-png.flaticon.com/512/6840/6840478.png",
-      "postura": "desarrollar armando este proyecto para su tesis.",
-      "perfil": "developer"
+      "nombre": "Eitan Mor",
+      "foto_url": "https://maozisrael.org/wp-content/webp-express/webp-images/uploads/2024/02/eitanMor.jpg.webp",
+      "postura": "victima",
+      "perfil": "Guardia de seguridad en el festival de música Nova"
+    },
+    {
+      "nombre": "Tzvika Mor",
+      "foto_url": "https://static-cdn.toi-media.com/www/uploads/2024/05/Tzvika-Mor-TOI.jpg",
+      "postura": "Neutral",
+      "perfil": "Fundador del Foro Tikva"
     }
   ],
   "analisis_critico": {
-    "sesgo": "Posible sesgo político y de poder en favor de Israel debido a la falta de información de la perspectiva palestina.",
-    "lenguaje_cargado": "El lenguaje utilizado por Israel Katz es directo y enfocado en la acción militar.",
-    "propaganda": "No se puede determinar con certeza si hay propaganda en la noticia dada la información limitada.",
-    "faltante_informacion": "Falta información sobre la perspectiva palestina y posibles consecuencias humanitarias."
+    "analisis_sentimiento": {
+      "proporcion_sentimientos": {
+        "NEU": 0.3,
+        "NEG": 0.5,
+        "POS": 0.2
+      },
+      "indice_polarizacion": 0.75,
+      "sentimiento_dominante": "NEG"
+    },
+    "analisis_profundo": {
+      "hate_speech": {
+        "hateful": 0.25,
+        "targeted": 0.15,
+        "aggressive": 0.1
+      },
+      "emotion": {
+        "others": 0.1,
+        "joy": 0.05,
+        "sadness": 0.2,
+        "anger": 0.3,
+        "surprise": 0.1,
+        "disgust": 0.15,
+        "fear": 0.1
+      },
+      "irony": {
+        "not ironic": 0.7,
+        "ironic": 0.3
+      }
+    }
   },
   "noticias_similares": [
     {
-      "titular": "Nuevos ataques israelíes en Gaza causan decenas de muertos y heridos",
-      "resumen": "Al menos 46 palestinos murieron y decenas resultaron heridos en ataques israelíes contra la Franja de Gaza.",
-      "enlace": "https://noticia1.com"
-    },
-    {
-      "titular": "Continúan agresiones israelíes en territorios ocupados",
-      "resumen": "Se reportan más de 50,000 muertos y 115,338 heridos en Gaza desde el inicio de las agresiones israelíes en octubre de 2023.",
-      "enlace": "https://noticia2.com"
-    }
-  ]
-}"""
-    
-    #parsed_result = json.loads(result)
-    print(type(result))
-    return result
+      "titular": "Israel: Oficiales de la Fuerza Armada exigen finalizar combates en la Franja de Gaza",
+      "enlace": "https://www.telesurtv.net/israel-oficiales-fuerza-armada-exigen/"}
+      ]
+  }
+  
+
+    print(type(r))
+    #print(result)
+    print("aqui")
+    print(r)
+    return r
     #return analysis_result
 
 

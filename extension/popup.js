@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (data.savedResult) {
-      mostrarResultados(data.savedResult);
+      llenarResultados(data.savedResult);
     }
   });
 
@@ -99,10 +99,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await response.json();
+      
+
       const resultText = JSON.stringify(data.result);
       
       //resultOutput.textContent = resultText;
-      mostrarResultados(data)
+      llenarResultados(data)
       chrome.storage.local.set({ savedResult: data });
 
       canAccessResult = true;
@@ -146,54 +148,107 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-
 // asdasdsa
 
-function mostrarResultados(data) {
-  // Titular
-  document.getElementById("titular").textContent = data.titular;
+function llenarResultados(data) {
+  // Llenar el titular
+  const titularDiv = document.getElementById('titular');
+  titularDiv.textContent = data.titular;
 
-  // Actores principales
-  const actoresContainer = document.getElementById("actores-container");
-  actoresContainer.innerHTML = "";
+  // Llenar actores principales
+  const actoresContainer = document.getElementById('actores-container');
+  actoresContainer.innerHTML = ''; // Limpiar primero
   data.actores_principales.forEach(actor => {
-    const actorDiv = document.createElement("div");
-    actorDiv.classList.add("actor-card");
-  
+    const actorDiv = document.createElement('div');
+    actorDiv.classList.add('actor');
     actorDiv.innerHTML = `
-      <img src="${actor.foto_url}" alt="Foto de ${actor.nombre}" />
+      <img src="${actor.foto_url}" alt="${actor.nombre}" width="80" height="80" style="border-radius: 50%; object-fit: cover;">
       <h5>${actor.nombre}</h5>
-      <p><em>${actor.perfil}</em></p>
-      <p>${actor.postura}</p>
+      <p><strong>Postura:</strong> ${actor.postura}</p>
+      <p><strong>Perfil:</strong> ${actor.perfil}</p>
     `;
-  
     actoresContainer.appendChild(actorDiv);
   });
-  
 
-  // Análisis crítico
-  const analisis = data.analisis_critico;
-  const analisisUl = document.getElementById("analisis-critico");
-  analisisUl.innerHTML = `
-    <li><strong>Sesgo:</strong> ${analisis.sesgo}</li>
-    <li><strong>Lenguaje cargado:</strong> ${analisis.lenguaje_cargado}</li>
-    <li><strong>Propaganda:</strong> ${analisis.propaganda}</li>
-    <li><strong>Falta de información:</strong> ${analisis.faltante_informacion}</li>
-  `;
+  // Llenar gráficos
+  // Sentimientos
+  const sentimientosData = data.analisis_critico.analisis_sentimiento.proporcion_sentimientos;
+  new Chart(document.getElementById('sentimientoChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(sentimientosData),
+      datasets: [{
+        data: Object.values(sentimientosData),
+        backgroundColor: ['#FFCC00', '#FF3300', '#66CC66']
+      }]
+    },
+    options: {
+      responsive: false
+    }
+  });
 
-  // Noticias similares
-  const similaresContainer = document.getElementById("noticias-similares");
-  similaresContainer.innerHTML = "";
-  data.noticias_similares.forEach(not => {
-    const notDiv = document.createElement("div");
-    notDiv.classList.add("noticia");
+  // Discurso de odio
+  const hateData = data.analisis_critico.analisis_profundo.hate_speech;
+  new Chart(document.getElementById('hateSpeechChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(hateData),
+      datasets: [{
+        data: Object.values(hateData),
+        backgroundColor: ['#FF6666', '#FF9933', '#FFCC99']
+      }]
+    },
+    options: {
+      responsive: false
+    }
+  });
 
-    notDiv.innerHTML = `
-      <p><strong>${not.titular}</strong></p>
-      <p>${not.resumen}</p>
-      <a href="${not.enlace}" target="_blank">Leer más</a>
+  // Emociones
+  const emocionesData = data.analisis_critico.analisis_profundo.emotion;
+  new Chart(document.getElementById('emocionesChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(emocionesData),
+      datasets: [{
+        data: Object.values(emocionesData),
+        backgroundColor: [
+          '#99CCFF', '#66FF66', '#FF6666', '#FF9933', '#CCCCCC', '#9966CC', '#FFFF66'
+        ]
+      }]
+    },
+    options: {
+      responsive: false
+    }
+  });
+
+  // Ironía
+  const ironiaData = data.analisis_critico.analisis_profundo.irony;
+  new Chart(document.getElementById('ironiaChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(ironiaData),
+      datasets: [{
+        data: Object.values(ironiaData),
+        backgroundColor: ['#66CCFF', '#FF99CC']
+      }]
+    },
+    options: {
+      responsive: false
+    }
+  });
+
+  // Llenar noticias similares
+  const noticiasContainer = document.getElementById('noticias-similares');
+  noticiasContainer.innerHTML = '';
+  data.noticias_similares.forEach(noticia => {
+    const noticiaDiv = document.createElement('div');
+    noticiaDiv.classList.add('noticia');
+    noticiaDiv.innerHTML = `
+      <a href="${noticia.enlace}" target="_blank">${noticia.titular}</a>
     `;
-
-    similaresContainer.appendChild(notDiv);
+    noticiasContainer.appendChild(noticiaDiv);
   });
 }
+
+
+

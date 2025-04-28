@@ -1,8 +1,13 @@
+# Analiza el siguiente texto noticioso y responde en formato JSON evaluando los siguientes aspectos:
+#1. **Sesgo ideológico**: Detecta si el texto presenta una inclinación política o ideológica hacia alguna de las partes involucradas. Evalúa el nivel de sesgo en una escala de 1 (muy bajo) a 5 (muy alto). Agrega una breve justificación.
+#2. **Uso de estereotipos**: Indica si el texto usa generalizaciones, frases estigmatizantes o simplificaciones que puedan reforzar estereotipos. Evalúa en una escala de 1 a 5. Justifica brevemente.
+
+
 from config import settings
 from datetime import datetime
 import chromadb
 import requests
-
+#from langchain.memory import ConversationSummaryMemory
 from langchain.agents import AgentType, Tool, initialize_agent
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
@@ -14,6 +19,12 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from IPython.display import display
 import json
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import pipeline
+import spacy
+from collections import Counter 
+
+from pysentimiento import create_analyzer
 
 # Inicializar cliente con persistencia
 client = chromadb.PersistentClient(path="./chroma_db")  
@@ -21,6 +32,77 @@ doc_collection = client.get_or_create_collection("prototipoDB")
 num_docs = doc_collection.count()
 print(f"Documentos en la colección: {num_docs}")
 embeddings = OpenAIEmbeddings(openai_api_key=settings.API_GPT)
+
+
+def analisis_profundo(text):
+    # https://github.com/pysentimiento/pysentimiento
+    # hate -> x.probas
+    # emotion -> y.probas
+    # irony -> z.probas
+
+    hate_speech_analyzer = create_analyzer(task="hate_speech", lang="es")
+    emotion_analyzer = create_analyzer(task="emotion", lang="es")
+    irony_analyzer = create_analyzer(task="irony", lang="es")
+    x = hate_speech_analyzer.predict(text)
+    y = emotion_analyzer.predict(text)
+    z = irony_analyzer.predict(text)
+
+    resultado = {
+    "hate_speech": x.probas,
+    "emotion": y.probas,
+    "irony": z.probas
+    }
+
+    return resultado
+
+
+
+def analisis_sentimiento(text):
+    model_name = "finiteautomata/beto-sentiment-analysis"
+    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+    nlp = spacy.load("es_core_news_sm")
+    doc = nlp(text)
+    frases = [sent.text.strip() for sent in doc.sents]
+    res = []
+    id = 1
+    for oracion in frases:
+        x = sentiment_pipeline(oracion)[0]
+        res.append({
+            "oracion": id,
+            "label": x['label'],
+            "score": x['score']
+        })
+        id += 1
+
+    labels = [r["label"] for r in res]
+    conteo = Counter(labels)
+    total = len(res)
+    
+    proporcion = {
+        "NEG": conteo.get("NEG", 0) / total,
+        "POS": conteo.get("POS", 0) / total,
+        "NEU": conteo.get("NEU", 0) / total
+    }
+
+    #proporcion = {k: f"{v / total:.2%}" for k, v in conteo.items()}
+    #proporcion = {k: v / total for k, v in conteo.items()}
+
+
+    num_polarizadas = len([r for r in res if r["label"] in ("POS", "NEG")])
+    polarizacion = num_polarizadas / len(res)
+
+    sentimiento_dominante = conteo.most_common(1)[0][0]
+
+    # Crear un diccionario con toda la información
+    resultado = {
+        "proporcion_sentimientos": proporcion,
+        "indice_polarizacion": polarizacion,
+        "sentimiento_dominante": sentimiento_dominante
+    }
+
+    return resultado
 
 
 # Función para búsqueda en Wikipedia (funciona!)
@@ -34,7 +116,14 @@ def wikipedia_search(query):
     })
     pages = response.json().get('query', {}).get('pages', {})
     page = next(iter(pages.values()), {})
-    return page.get('extract', "No se encontró información en Wikipedia.")
+    extract = page.get('extract', "No se encontró información en Wikipedia.")
+    
+    # Cortar el texto
+    if extract != "No se encontró información en Wikipedia.":
+        tercio_len = len(extract) // 3
+        extract = extract[:tercio_len]
+    
+    return extract
 
 def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg"):
     api_key = settings.API_GOOGLE
@@ -99,7 +188,7 @@ def buscar_por_embeddings(pregunta):
         link = metas[i].get("link", "Sin enlace")
         texto = docs[i]
 
-        r += f"Noticia {i+1}: {titulo} | {fecha} | {link} | {texto}\n"
+        r += f"Noticia {i+1}: {titulo} | {fecha} | {link} \n"
 
     return r
 
@@ -126,18 +215,6 @@ tools = [
             Busca documentos relevantes en ChromaDB utilizando embeddings calculados de la pregunta.
             Cuando llames a esta herramienta el Action Input es solo el texto de la pregunta en string.
         """
-    )
-]
-
-# Crear las herramientas
-tools = [
-    Tool(
-        name="buscar_por_embeddings",
-        func=buscar_por_embeddings,
-        description="""
-            Busca documentos relevantes en ChromaDB utilizando embeddings calculados de la pregunta.
-            Cuando llames a esta herramienta el Action Input es solo el texto de la pregunta en string.
-        """
     ),
     Tool(
         name="Wikipedia Search",
@@ -153,74 +230,117 @@ tools = [
         description="""Busca y reporta el url de una imagen relacioanada al action input.
         el action input debe ser un string.
         """
+    ),
+        Tool(
+        name = "analisis profundo",
+        func=analisis_profundo,
+        description="""entrega un analisis del odio, la emoción y la ironia.
+        """
+    ),
+        Tool(
+        name = "analisis del sentimiento",
+        func=analisis_sentimiento,
+        description="""entrega la proporcion de sentimientos, indice de polarizacion y el sentimiento dominante.
+        """
     )
 ]
 
 # Definir el prompt usando PromptTemplate
 prompt_template = """
-Eres un agente de inteligencia artificial que responde en español. El usuario te entregará una noticia. Tu tarea es analizarla y entregar una respuesta estructurada en formato JSON con los siguientes elementos:
+Eres un agente de inteligencia artificial que responde en español. El usuario te entregará una noticia. Tu tarea es analizarla utilizando las herramientas disponibles y construir una respuesta en **formato JSON completo y válido**.
 
-1. **Titular** de la noticia.
-2. **Actores principales** (máximo 3 personas, deben ser personas individuales no grupos, ni entidades). Para cada uno, entrega:
-   - Nombre completo.
-   - Foto (usando la herramienta `buscar_y_mostrar_magen`).
-   - Postura frente al hecho.
-   - Perfil profesional o rol (usa `Wikipedia Search` si es necesario).
-3. **Análisis crítico** en un párrafo que aborde:
-   - Sesgos presentes (políticos, ideológicos, etc.).
-   - Lenguaje cargado o emotivo.
-   - Presencia o no de propaganda, con explicación.
-   - Elementos faltantes o poco claros en la información entregada.
-4. **Noticias similares** (máximo 3) para contrastar. Usa `buscar_por_embeddings`. Para cada una incluye:
-   - Titular.
-   - Resumen breve.
-   - Enlace.
+### Flujo de trabajo obligatorio:
+1. Lee y comprende la noticia entregada.
+2. Extrae los actores principales (máximo 3 personas individuales, no organizaciones), además su postura frente a la noticia (Positiva, Negativa o Neutra)
+3. Usa las herramientas disponibles en el siguiente orden:
+   - Para cada actor:
+     - Usa `Wikipedia Search` para obtener su perfil.
+     - Usa `buscar_y_mostrar_magen` para encontrar su foto.
+   - Aplica `analisis profundo` para obtener:
+     - hate_speech
+     - emotion
+     - irony
+   - Aplica `analisis del sentimiento` para obtener:
+     - proporcion_sentimientos
+     - indice_polarizacion
+     - sentimiento_dominante
+   - Usa `buscar_por_embeddings` para encontrar hasta 3 noticias similares.
+
+4. **Antes de construir el JSON final, revisa si todos los datos han sido recolectados.**
+
+5. **Importante:**
+   - Si no encuentras información para un campo, deja el valor como `""`.
+   - Asegúrate que no haya datos repetidos.
+   - Asegúrate de cerrar correctamente todos los corchetes `{}` y llaves `[]`.
+   - No repitas bloques como emociones o noticias similares.
+   - No agregues texto fuera del JSON.
+   - Siempre mantén los valores numéricos como **decimales** (por ejemplo: 0.15).
+   - No transformes ni conviertas unidades numéricas.
 
 ### Herramientas disponibles:
-- `Wikipedia Search`: para obtener información sobre personas mencionadas.
-- `buscar_y_mostrar_magen`: para encontrar imágenes de los actores principales.
-- `buscar_por_embeddings`: para recuperar noticias similares de una base de datos (esta herramienta devuelve: titular, noticia, fecha y enlace).
+- `Wikipedia Search`
+- `buscar_y_mostrar_magen`
+- `analisis profundo`
+- `analisis del sentimiento`
+- `buscar_por_embeddings`
 
-### Reglas importantes:
-- Solo utiliza la información proporcionada por el usuario o recuperada con las herramientas indicadas.
-- No inventes datos.
-- Si no encuentras información para un actor o una noticia similar, omítela en el JSON (no incluyas valores ficticios, deja el campo vacio).
-- La respuesta debe ser un **JSON válido y bien formado**. No incluyas texto adicional fuera del JSON.
-
-### Formato de respuesta:
-
+### Formato de respuesta final:
 {
   "titular": "Título de la noticia principal",
   "actores_principales": [
     {
-      "nombre": "Nombre del actor",
-      "foto_url": "https://link-a-la-foto.jpg",
-      "postura": "Resumen de su postura frente al tema",
-      "perfil": "Ej. presidente de Chile, periodista, activista"
+      "nombre": "Nombre completo",
+      "foto_url": "URL de imagen",
+      "postura": "Postura frente al hecho",
+      "perfil": "Rol o profesión"
     }
-    // Puedes incluir hasta 3 actores, pero menos si no hay más información
   ],
   "analisis_critico": {
-    "sesgo": "Ej. político, ideológico, económico, etc.",
-    "lenguaje_cargado": "Ejemplos concretos del lenguaje usado",
-    "propaganda": "sí/no + explicación",
-    "faltante_informacion": "Aspectos clave que no se mencionan"
+    "analisis_sentimiento": {
+      "proporcion_sentimientos": {
+        "NEU": "valor en porcentaje",
+        "NEG": "valor en porcentaje",
+        "POS": "valor en porcentaje"
+      },
+      "indice_polarizacion": valor_numérico,
+      "sentimiento_dominante": "valor textual"
+    },
+    "analisis_profundo": {
+      "hate_speech": {
+        "hateful": valor_numérico,
+        "targeted": valor_numérico,
+        "aggressive": valor_numérico
+      },
+      "emotion": {
+        "others": valor_numérico,
+        "joy": valor_numérico,
+        "sadness": valor_numérico,
+        "anger": valor_numérico,
+        "surprise": valor_numérico,
+        "disgust": valor_numérico,
+        "fear": valor_numérico
+      },
+      "irony": {
+        "not ironic": valor_numérico,
+        "ironic": valor_numérico
+      }
+    }
   },
   "noticias_similares": [
     {
       "titular": "Título de noticia similar",
-      "resumen": "Breve explicación de su contenido",
-      "enlace": "https://enlace-a-noticia.com"
+      "enlace": "URL de la noticia"
     }
-    // Máximo 3 noticias. Si no hay 3 relevantes, incluye menos.
   ]
 }
+
 """
+
+
 
 llm = ChatOpenAI(temperature=0.7, openai_api_key=settings.API_GPT)
 prompt = PromptTemplate(input_variables=["query"], template=prompt_template)
 memory = ConversationBufferWindowMemory(k=5)
-
 agent = initialize_agent(
     tools=tools,
     llm=llm,
@@ -232,7 +352,7 @@ agent = initialize_agent(
 
 def getResponse(query):
     response = agent.run(prompt_template + "Noticia del usuario: " + query)
-
+    #response = agent.run(query)
     try:
         parsed = json.loads(response) 
         return JSONResponse(content=parsed)
@@ -241,4 +361,3 @@ def getResponse(query):
             status_code=500,
             content={"error": "Respuesta del modelo no es JSON válido", "detalle": str(e)}
         )
-

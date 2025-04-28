@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Analizador de Noticias</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Incluimos Chart.js -->
+  <script src="chart.umd.js"></script>
+
 </head>
 <body>
 
@@ -13,7 +16,6 @@
     <button class="tab-button" id="btn-result">📊 Análisis</button>
     <button class="tab-button" id="btn-chat">💬 Chat IA</button>
     <button class="tab-button" id="clear-btn">Borrar todo</button>
-
   </div>
 
   <!-- Sección Inicio -->
@@ -33,18 +35,31 @@
       <h2>Resultado del Análisis</h2>
 
       <div id="result-container">
-        <h3 id="titular"></h3>
+        <h4>Titular</h4>
+        <div id="titular"></div>
       
         <h4>Actores principales</h4>
         <div id="actores-container"></div>
       
         <h4>Análisis Crítico</h4>
-        <ul id="analisis-critico"></ul>
-      
+        <div id="analisis-critico">
+          <!-- Gráficos de tarta -->
+          <h5>Sentimientos</h5>
+          <canvas id="sentimientoChart" width="300" height="300"></canvas>
+
+          <h5>Discurso de odio</h5>
+          <canvas id="hateSpeechChart" width="300" height="300"></canvas>
+
+          <h5>Emociones</h5>
+          <canvas id="emocionesChart" width="300" height="300"></canvas>
+
+          <h5>Ironía</h5>
+          <canvas id="ironiaChart" width="300" height="300"></canvas>
+        </div>
+
         <h4>Noticias Similares</h4>
         <div id="noticias-similares"></div>
       </div>
-      
     </div>
   </div>
 

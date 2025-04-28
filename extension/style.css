@@ -5,7 +5,7 @@ body {
   height: 900px;
 }
 
-/* Pestañas w:300 | h:250*/
+/* Pestañas w:300 | h:250 */
 .tabs {
   display: flex;
   background-color: #f1f1f1;
@@ -48,16 +48,15 @@ body {
 
 textarea {
   width: 100%;
-  height: 400px; 
-  min-height: 100px; 
-  max-height: 500px; 
+  height: 400px;
+  min-height: 100px;
+  max-height: 500px;
   margin-bottom: 10px;
   resize: vertical;
   padding: 8px;
   font-size: 14px;
   box-sizing: border-box;
 }
-
 
 button#send-btn {
   background-color: #4CAF50;
@@ -79,7 +78,6 @@ button#send-btn:hover {
   color: #555;
 }
 
-
 button#auto-btn {
   background-color: #3c44b1;
   color: white;
@@ -91,132 +89,112 @@ button#auto-btn {
 }
 
 button#auto-btn:hover {
-  background-color: #3c44b1;
+  background-color: #323aa1;
 }
 
+/* ---- Sección Resultados ---- */
 
+#section-result {
+  padding: 2rem;
+  background-color: #f9f9f9;
+}
 
+/* Texto principal: Resultado del Análisis */
+#section-result h2 {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  color: #333;
+}
+
+/* Subtítulos: Titular - Actores principales - Análisis crítico - Noticias similares */
+#section-result h4 {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #444;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+/* Títulos de gráficos */
+#section-result h5 {
+  font-size: 1.2rem;
+  margin: 0;
+  text-align: center;
+  color: #666;
+}
+
+/* Titular */
+#titular {
+  font-size: 1.3rem;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+/* Actores principales */
+#actores-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
 
 .actor {
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin-bottom: 10px;
+  text-align: center;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .actor img {
-  display: block;
-  margin-bottom: 5px;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 0.5rem;
 }
 
-.noticia {
-  border-top: 1px dashed #ccc;
-  margin-top: 10px;
-  padding-top: 10px;
-}
-
-
-
-
-/* Estilo general del contenedor */
-#result-container {
-  background-color: #fdfdfd;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-top: 15px;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-/* Titular principal */
-#titular {
-  font-size: 1.5rem;
+.actor h6 {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 1rem;
+  font-weight: bold;
   color: #333;
-  margin-bottom: 15px;
 }
 
-/* Estilo de los subtítulos */
-#result-container h4 {
-  margin-top: 20px;
-  color: #444;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 4px;
+.actor p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
 }
 
-#actores-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 10px;
-  justify-content: flex-start;
-}
-
-.actor-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  padding: 12px;
-  width: 220px;
-  display: flex;
-  flex-direction: column;
+/* Contenedor de análisis crítico */
+#analisis-critico {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 2rem; /* menos espacio entre títulos y gráficos */
+  margin-top: 1rem;
   align-items: center;
+}
+
+/* Cada título (h5) y gráfico (canvas) */
+#analisis-critico h5,
+#analisis-critico canvas {
+  margin: 0 auto;
   text-align: center;
 }
 
-.actor-card img {
-  width: 100%;
+/* Forzar que cada título esté encima de su gráfico */
+#analisis-critico h5 {
+  margin-bottom: 0.5rem;
+}
+
+#analisis-critico canvas {
+  max-width: 100%;
   height: auto;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.actor-card h5 {
-  margin: 0;
-  font-size: 1rem;
-  color: #222;
-}
-
-.actor-card p {
-  font-size: 0.85rem;
-  margin: 4px 0;
-  color: #555;
-}
-
-
-/* Análisis crítico */
-#analisis-critico {
-  list-style-type: "🟢 ";
-  padding-left: 20px;
-  margin-top: 10px;
-}
-
-#analisis-critico li {
-  margin-bottom: 8px;
-  color: #333;
-}
-
-/* Noticias similares */
-#noticias-similares {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.noticia-card {
-  background-color: #f4f4f4;
-  border-left: 4px solid #007acc;
-  padding: 10px 14px;
-  border-radius: 8px;
-}
-
-.noticia-card a {
-  font-weight: bold;
-  text-decoration: none;
-  color: #007acc;
-}
-
-.noticia-card p {
-  margin: 5px 0 0;
-  font-size: 0.9rem;
-  color: #444;
 }
