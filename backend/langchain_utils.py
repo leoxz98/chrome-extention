@@ -2,12 +2,10 @@
 #1. **Sesgo ideológico**: Detecta si el texto presenta una inclinación política o ideológica hacia alguna de las partes involucradas. Evalúa el nivel de sesgo en una escala de 1 (muy bajo) a 5 (muy alto). Agrega una breve justificación.
 #2. **Uso de estereotipos**: Indica si el texto usa generalizaciones, frases estigmatizantes o simplificaciones que puedan reforzar estereotipos. Evalúa en una escala de 1 a 5. Justifica brevemente.
 
-
 from config import settings
 from datetime import datetime
 import chromadb
 import requests
-#from langchain.memory import ConversationSummaryMemory
 from langchain.agents import AgentType, Tool, initialize_agent
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
@@ -39,7 +37,6 @@ def analisis_profundo(text):
     # hate -> x.probas
     # emotion -> y.probas
     # irony -> z.probas
-
     hate_speech_analyzer = create_analyzer(task="hate_speech", lang="es")
     emotion_analyzer = create_analyzer(task="emotion", lang="es")
     irony_analyzer = create_analyzer(task="irony", lang="es")
@@ -64,10 +61,10 @@ def analisis_sentimiento(text):
     sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
     nlp = spacy.load("es_core_news_sm")
     doc = nlp(text)
-    frases = [sent.text.strip() for sent in doc.sents]
+    frases = [sent.text.strip() for sent in doc.sents] #division en frases
     res = []
     id = 1
-    for oracion in frases:
+    for oracion in frases: # Calculo de sentimiento por cada oracion
         x = sentiment_pipeline(oracion)[0]
         res.append({
             "oracion": id,
@@ -76,7 +73,7 @@ def analisis_sentimiento(text):
         })
         id += 1
 
-    labels = [r["label"] for r in res]
+    labels = [r["label"] for r in res] # calculo de totales
     conteo = Counter(labels)
     total = len(res)
     
@@ -85,21 +82,14 @@ def analisis_sentimiento(text):
         "POS": conteo.get("POS", 0) / total,
         "NEU": conteo.get("NEU", 0) / total
     }
+    num_polarizadas = len([r for r in res if r["label"] in ("POS", "NEG")]) # frases polarizadas (un solo sentimiento)
+    polarizacion = num_polarizadas / len(res) # proporcion
+    sentimiento_dominante = conteo.most_common(1)[0][0] # que predomina más
 
-    #proporcion = {k: f"{v / total:.2%}" for k, v in conteo.items()}
-    #proporcion = {k: v / total for k, v in conteo.items()}
-
-
-    num_polarizadas = len([r for r in res if r["label"] in ("POS", "NEG")])
-    polarizacion = num_polarizadas / len(res)
-
-    sentimiento_dominante = conteo.most_common(1)[0][0]
-
-    # Crear un diccionario con toda la información
     resultado = {
         "proporcion_sentimientos": proporcion,
-        "indice_polarizacion": polarizacion,
-        "sentimiento_dominante": sentimiento_dominante
+        "indice_polarizacion": polarizacion, # pendiente de como mostrar
+        "sentimiento_dominante": sentimiento_dominante # pendiente de como mostrar
     }
 
     return resultado
@@ -120,8 +110,8 @@ def wikipedia_search(query):
     
     # Cortar el texto
     if extract != "No se encontró información en Wikipedia.":
-        tercio_len = len(extract) // 3
-        extract = extract[:tercio_len]
+        tercio_len = len(extract) // 3 
+        extract = extract[:tercio_len]  # Recorte del texto para no ocupar mucho
     
     return extract
 
@@ -157,7 +147,6 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
                 f.write(img_response.content)
             
             imagen = Image.open(nombre_archivo)
-            #display(imagen)
             print("link foto")
             print(url_imagen)
             return f"Imagen encontrada en la URL: {url_imagen}"
@@ -187,24 +176,10 @@ def buscar_por_embeddings(pregunta):
         fecha = metas[i].get("date", "Sin fecha")
         link = metas[i].get("link", "Sin enlace")
         texto = docs[i]
-
+        # no se le pasa el texto al modelo (no se si la contextualizacion valga y consume mucho texto)
         r += f"Noticia {i+1}: {titulo} | {fecha} | {link} \n"
 
     return r
-
-        
-# Crear una Tool para LangChain
-buscar_por_embeddings_tool = Tool(
-    name="BuscarPorEmbeddings",
-    func=lambda x: buscar_por_embeddings(x, doc_collection),  # doc_collection es la colección de ChromaDB
-    description="Busca documentos relevantes en ChromaDB utilizando embeddings calculados de la pregunta."
-)
-
-# Función para búsqueda en ChromaDB
-def chromadb_search(query):
-    resultados = buscar_por_embeddings(query, doc_collection, top_n=3)  # Función previamente definida
-    return "\n".join([f"Noticia {i+1}:\nDocumento: {doc['documento']}\nMetadatos: {doc['metadatos']}\n{'-'*20}" 
-                      for i, doc in enumerate(resultados)])
 
 # Crear las herramientas
 tools = [
@@ -245,7 +220,7 @@ tools = [
     )
 ]
 
-# Definir el prompt usando PromptTemplate
+# ¿Como mejorar el template para que el modelo no sea tan impredecible?
 prompt_template = """
 Eres un agente de inteligencia artificial que responde en español. El usuario te entregará una noticia. Tu tarea es analizarla utilizando las herramientas disponibles y construir una respuesta en **formato JSON completo y válido**.
 
@@ -337,7 +312,7 @@ Eres un agente de inteligencia artificial que responde en español. El usuario t
 """
 
 
-
+# ¿ se puede ajustar algo aqui para mejorar el modelo?
 llm = ChatOpenAI(temperature=0.7, openai_api_key=settings.API_GPT)
 prompt = PromptTemplate(input_variables=["query"], template=prompt_template)
 memory = ConversationBufferWindowMemory(k=5)
@@ -352,7 +327,6 @@ agent = initialize_agent(
 
 def getResponse(query):
     response = agent.run(prompt_template + "Noticia del usuario: " + query)
-    #response = agent.run(query)
     try:
         parsed = json.loads(response) 
         return JSONResponse(content=parsed)

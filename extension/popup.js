@@ -19,11 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
   //const resultOutput = document.getElementById("result-text");
   const statusMsg = document.getElementById("status-msg");
 
-  const titularElem = document.getElementById("titular");
-  const actoresContainer = document.getElementById("actores-container");
-  const analisisUl = document.getElementById("analisis-critico");
-  const similaresContainer = document.getElementById("noticias-similares");
-
   // Cambiar entre secciones
   function showSection(sectionId) {
     sectionHome.classList.add("hidden");
@@ -149,6 +144,29 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // asdasdsa
+document.getElementById('descargar-btn').addEventListener('click', function() {
+  chrome.storage.local.get('savedResult', function(result) {
+      if (result.savedResult) {
+          const dataStr = JSON.stringify(result.savedResult, null, 2);
+          //const blob = new Blob([dataStr], { type: "application/json" });
+          const blob = new Blob([dataStr], { type: "text/plain" });
+
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'analisis critico.txt';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      } else {
+          alert('No hay datos guardados aún.');
+      }
+  });
+});
+
+
 
 function llenarResultados(data) {
   // Llenar el titular
