@@ -218,12 +218,27 @@ function llenarResultados(data) {
      }]
    },
    options: {
-     responsive: false
+    plugins: {
+      title: {
+        display: true,
+        text: 'Proporción de Sentimientos',
+        font: {
+          size: 16
+        },
+        padding: {
+          top: 0,
+          bottom: 0
+        }
+      },
+      // ...otros plugins
+    },
+    responsive: false
    }
  });
 
  // Índice de polarización
- const indicePolarizacion = 55; // Reemplaza con data.indice_polarizacion * 100 si aplica
+  const indicePolarizacion = data.indice_polarizacion * 100; 
+ // const indicePolarizacion = 55; 
 
  let color;
  if (indicePolarizacion < 33) {
@@ -262,6 +277,17 @@ function llenarResultados(data) {
        }
      },
      plugins: {
+      title: {
+        display: true,
+        text: 'Polarización',
+        font: {
+          size: 16
+        },
+        padding: {
+          top: 10,
+          bottom: 10
+        }
+      },
        legend: {
          display: false
        },
