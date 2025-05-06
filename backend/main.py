@@ -29,73 +29,66 @@ async def analyze(req: TextRequest):
     print(f"Texto recibido: {user_text}")
     print("\n  -------- \n")
     r = getResponse(user_text)
+    #print(type(r))
+    print("aqui")
 
-    result = {
-  "titular": "Netanyahu aseguró que Israel trabaja en un acuerdo para liberar a diez de los rehenes de Hamas en Gaza (EFE/ARCHIVO)",
-  "actores_principales": [
-    {
-      "nombre": "Benjamin Netanyahu",
-      "foto_url": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQnMVOeWCJQV5i2WYXFo4v1-itSFGW00dsY8THM_qVbnLE2U2PH",
-      "postura": "buena",
-      "perfil": "Político, Primer Ministro de Israel"
-    },
-    {
-      "nombre": "Eitan Mor",
-      "foto_url": "https://maozisrael.org/wp-content/webp-express/webp-images/uploads/2024/02/eitanMor.jpg.webp",
-      "postura": "victima",
-      "perfil": "Guardia de seguridad en el festival de música Nova"
-    },
-    {
-      "nombre": "Tzvika Mor",
-      "foto_url": "https://static-cdn.toi-media.com/www/uploads/2024/05/Tzvika-Mor-TOI.jpg",
-      "postura": "Neutral",
-      "perfil": "Fundador del Foro Tikva"
-    }
-  ],
-  "analisis_critico": {
-    "analisis_sentimiento": {
-      "proporcion_sentimientos": {
-        "NEU": 0.3,
-        "NEG": 0.5,
-        "POS": 0.2
-      },
-      "indice_polarizacion": 0.75,
-      "sentimiento_dominante": "NEG"
-    },
-    "analisis_profundo": {
-      "hate_speech": {
-        "hateful": 0.25,
-        "targeted": 0.15,
-        "aggressive": 0.1
-      },
-      "emotion": {
-        "others": 0.1,
-        "joy": 0.05,
-        "sadness": 0.2,
-        "anger": 0.3,
-        "surprise": 0.1,
-        "disgust": 0.15,
-        "fear": 0.1
-      },
-      "irony": {
-        "not ironic": 0.7,
-        "ironic": 0.3
-      }
-    }
-  },
+    result = """{
+  "titular": "Abbas y Macron exigen fin de la guerra y ayuda para Gaza",
+  "resumen": "Los presidentes de Palestina, Mahmoud Abbas, y de Francia, Emmanuel Macron, reclamaron un alto el fuego en Gaza y la entrada de ayuda humanitaria. Macron y Abbas defienden la solución de dos Estados para el conflicto. Netanyahu criticó a Macron por su apoyo a la creación de un Estado palestino.",
   "noticias_similares": [
     {
-      "titular": "Israel: Oficiales de la Fuerza Armada exigen finalizar combates en la Franja de Gaza",
-      "enlace": "https://www.telesurtv.net/israel-oficiales-fuerza-armada-exigen/"}
+      "titular": "Trump dice que hay 'progresos' en las negociaciones entre Israel y Hamás para un alto el fuego",
+      "enlace": "https://www.diarioestrategia.cl/texto-diario/mostrar/5252680/trump-dice-hay-progresos-negociaciones-entre-israel-hamas-alto-fuego"
+    },
+    {
+      "titular": "Reacciones en Francia ante eventual reconocimiento de Palestina",
+      "enlace": "https://www.prensa-latina.cu/2025/04/10/reacciones-en-francia-ante-eventual-reconocimiento-de-palestina/"
+    }
+  ],
+  "sesgos": {
+    "opiniones_como_hechos": {
+      "presente": false,
+      "ejemplos": []
+    },
+    "sensacionalismo_emocionalismo": {
+      "presente": false,
+      "ejemplos": []
+    },
+    "lectura_de_mente": {
+      "presente": true,
+      "ejemplos": [
+        "'Coincidieron en que la Autoridad Nacional Palestina debe asumir la responsabilidad en ese territorio'"
       ]
-  }
-  
-
-    print(type(r))
-    #print(result)
-    print("aqui")
-    print(r)
+    }
+  },
+  "actores_principales": [
+    {
+      "nombre": "Mahmoud Abbas",
+      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Mahmoud_Abbas_2024.jpg",
+      "postura": "Reclama un alto el fuego en Gaza y exige a Israel permitir la entrada de ayuda humanitaria al territorio.",
+      "perfil": "Mahmoud Abbas es un político palestino que actualmente se desempeña como presidente de Palestina desde el 15 de enero de 2005."
+    },
+    {
+      "nombre": "Emmanuel Macron",
+      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Emmanuel_Macron_February_2025.jpg",
+      "postura": "Defiende la implementación de la solución de dos Estados para acabar con el histórico diferendo.",
+      "perfil": "Emmanuel Macron es un economista y político francés, vigesimoquinto presidente de la República Francesa desde 2017."
+    },
+    {
+      "nombre": "Benjamín Netanyahu",
+      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/7/74/Benjamin_Netanyahu%2C_February_2023.jpg",
+      "postura": "Rechaza la creación de un Estado palestino y cualquier plan para desplazar por la fuerza a los habitantes del enclave costero.",
+      "perfil": "Benjamín Netanyahu es un político israelí que actualmente se desempeña como primer ministro de Israel desde diciembre de 2022."
+    }
+  ],
+  "proporcion_sentimientos": {
+    "NEG": 0.16666666666666666,
+    "POS": 0.0,
+    "NEU": 0.8333333333333334
+  },
+  "indice_polarizacion": 0.16666666666666666
+}"""
     return r
-    #return analysis_result
+    #return json.loads(result)
 
 

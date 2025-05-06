@@ -1,3 +1,6 @@
+let sentimientoChartInstance = null;
+let polarizacionChartInstance = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   // Variables auxiliares
   let canAccessResult = false;
@@ -97,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
 
       const resultText = JSON.stringify(data.result);
-      
+      alert(JSON.stringify(data, null, 2));
       //resultOutput.textContent = resultText;
       llenarResultados(data)
       chrome.storage.local.set({ savedResult: data });
@@ -169,91 +172,109 @@ document.getElementById('descargar-btn').addEventListener('click', function() {
 
 
 function llenarResultados(data) {
+  // Destruir instancias previas si existen
+  if (sentimientoChartInstance) {
+    sentimientoChartInstance.destroy();
+  }
+  if (polarizacionChartInstance) {
+    polarizacionChartInstance.destroy();
+  }
   // Llenar el titular
   const titularDiv = document.getElementById('titular');
   titularDiv.textContent = data.titular;
+  const resumenDiv = document.getElementById('resumen');
+  resumenDiv.textContent = data.resumen;
+  // Llenar el resumen
+  document.getElementById('resumen').textContent = data.resumen;
 
   // Llenar actores principales
   const actoresContainer = document.getElementById('actores-container');
-  actoresContainer.innerHTML = ''; // Limpiar primero
+  actoresContainer.innerHTML = '';
   data.actores_principales.forEach(actor => {
     const actorDiv = document.createElement('div');
     actorDiv.classList.add('actor');
     actorDiv.innerHTML = `
-      <img src="${actor.foto_url}" alt="${actor.nombre}" width="80" height="80" style="border-radius: 50%; object-fit: cover;">
-      <h5>${actor.nombre}</h5>
-      <p><strong>Postura:</strong> ${actor.postura}</p>
-      <p><strong>Perfil:</strong> ${actor.perfil}</p>
-    `;
+    <div style="text-align: center;">
+      <img src="${actor.foto_url}" alt="${actor.nombre}" width="80" height="80" style="border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;">
+      <h5 style="margin: 10px 0 5px;">${actor.nombre}</h5>
+    </div>
+    <p><strong>Postura:</strong> ${actor.postura}</p>
+    <p><strong>Perfil:</strong> ${actor.perfil}</p>
+  `;
+  
     actoresContainer.appendChild(actorDiv);
   });
 
-  // Llenar gráficos
-  // Sentimientos
-  const sentimientosData = data.analisis_critico.analisis_sentimiento.proporcion_sentimientos;
-  new Chart(document.getElementById('sentimientoChart'), {
-    type: 'pie',
-    data: {
-      labels: Object.keys(sentimientosData),
-      datasets: [{
-        data: Object.values(sentimientosData),
-        backgroundColor: ['#FFCC00', '#FF3300', '#66CC66']
-      }]
-    },
-    options: {
-      responsive: false
-    }
-  });
+ // Gráfico de sentimientos
+ const sentimientosData = data.proporcion_sentimientos;
+ const ctxSentimiento = document.getElementById('sentimientoChart').getContext('2d');
+ sentimientoChartInstance = new Chart(ctxSentimiento, {
+   type: 'pie',
+   data: {
+     labels: Object.keys(sentimientosData),
+     datasets: [{
+       data: Object.values(sentimientosData),
+       backgroundColor: ['#FFCC00', '#FF3300', '#66CC66']
+     }]
+   },
+   options: {
+     responsive: false
+   }
+ });
 
-  // Discurso de odio
-  const hateData = data.analisis_critico.analisis_profundo.hate_speech;
-  new Chart(document.getElementById('hateSpeechChart'), {
-    type: 'pie',
-    data: {
-      labels: Object.keys(hateData),
-      datasets: [{
-        data: Object.values(hateData),
-        backgroundColor: ['#FF6666', '#FF9933', '#FFCC99']
-      }]
-    },
-    options: {
-      responsive: false
-    }
-  });
+ // Índice de polarización
+ const indicePolarizacion = 55; // Reemplaza con data.indice_polarizacion * 100 si aplica
 
-  // Emociones
-  const emocionesData = data.analisis_critico.analisis_profundo.emotion;
-  new Chart(document.getElementById('emocionesChart'), {
-    type: 'pie',
-    data: {
-      labels: Object.keys(emocionesData),
-      datasets: [{
-        data: Object.values(emocionesData),
-        backgroundColor: [
-          '#99CCFF', '#66FF66', '#FF6666', '#FF9933', '#CCCCCC', '#9966CC', '#FFFF66'
-        ]
-      }]
-    },
-    options: {
-      responsive: false
-    }
-  });
+ let color;
+ if (indicePolarizacion < 33) {
+   color = '#66CC66';
+ } else if (indicePolarizacion < 66) {
+   color = '#FFCC00';
+ } else {
+   color = '#FF3300';
+ }
 
-  // Ironía
-  const ironiaData = data.analisis_critico.analisis_profundo.irony;
-  new Chart(document.getElementById('ironiaChart'), {
-    type: 'pie',
-    data: {
-      labels: Object.keys(ironiaData),
-      datasets: [{
-        data: Object.values(ironiaData),
-        backgroundColor: ['#66CCFF', '#FF99CC']
-      }]
-    },
-    options: {
-      responsive: false
-    }
-  });
+ const ctxPolarizacion = document.getElementById('polarizacionChart').getContext('2d');
+ polarizacionChartInstance = new Chart(ctxPolarizacion, {
+   type: 'bar',
+   data: {
+     labels: ['Índice de polarización'],
+     datasets: [{
+       data: [indicePolarizacion],
+       backgroundColor: [color],
+       barThickness: 30,
+     }]
+   },
+   options: {
+     indexAxis: 'y',
+     scales: {
+       x: {
+         max: 100,
+         min: 0,
+         ticks: {
+           callback: function (value) {
+             return value + '%';
+           }
+         }
+       },
+       y: {
+         display: false
+       }
+     },
+     plugins: {
+       legend: {
+         display: false
+       },
+       tooltip: {
+         callbacks: {
+           label: (context) => context.parsed.x.toFixed(2) + '%'
+         }
+       }
+     },
+     responsive: false
+   }
+ });
+
 
   // Llenar noticias similares
   const noticiasContainer = document.getElementById('noticias-similares');
@@ -261,12 +282,41 @@ function llenarResultados(data) {
   data.noticias_similares.forEach(noticia => {
     const noticiaDiv = document.createElement('div');
     noticiaDiv.classList.add('noticia');
-    noticiaDiv.innerHTML = `
-      <a href="${noticia.enlace}" target="_blank">${noticia.titular}</a>
-    `;
+    noticiaDiv.innerHTML = `<a href="${noticia.enlace}" target="_blank">${noticia.titular}</a>`;
     noticiasContainer.appendChild(noticiaDiv);
   });
+
+
+  const sesgos = data.sesgos;
+
+  // Lectura de mente
+  const lecturaSpan = document.getElementById('lectura-mente-ejemplo');
+  if (sesgos.lectura_de_mente.presente && sesgos.lectura_de_mente.ejemplos.length > 0) {
+    lecturaSpan.textContent = sesgos.lectura_de_mente.ejemplos.join(', ');
+  } else {
+    lecturaSpan.textContent = 'No se detectó este sesgo.';
+  }
+  
+  // Opiniones como hechos
+  const opinionesSpan = document.getElementById('opiniones-hechos-ejemplo');
+  if (sesgos.opiniones_como_hechos.presente && sesgos.opiniones_como_hechos.ejemplos.length > 0) {
+    opinionesSpan.textContent = sesgos.opiniones_como_hechos.ejemplos.join(', ');
+  } else {
+    opinionesSpan.textContent = 'No se detectó este sesgo.';
+  }
+  
+  // Sensacionalismo / emocionalismo
+  const sensaSpan = document.getElementById('sensacionalismo-ejemplo');
+  if (sesgos.sensacionalismo_emocionalismo.presente && sesgos.sensacionalismo_emocionalismo.ejemplos.length > 0) {
+    sensaSpan.textContent = sesgos.sensacionalismo_emocionalismo.ejemplos.join(', ');
+  } else {
+    sensaSpan.textContent = 'No se detectó este sesgo.';
+  }
+  
+
+
 }
+
 
 
 

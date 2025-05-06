@@ -31,39 +31,60 @@
     </div>
   </div>
 
-  <!-- Sección Resultados -->
-  <div class="section hidden" id="section-result">
-    <div class="content">
-      <h2>Resultado del Análisis</h2>
+<!-- Sección Resultados -->
+<div class="section hidden" id="section-result">
+  <div class="content">
+    <h2>Resultado del Análisis</h2>
 
-      <div id="result-container">
-        <h4>Titular</h4>
-        <div id="titular"></div>
+    <div id="result-container">
+      <h4>Titular</h4>
+      <div id="titular"></div>
+
+      <h4>Resumen</h4>
+      <div id="resumen"></div>
+
+      <h4>Sesgos Detectados</h4>
+      <div style="display: flex; border: 1px solid black; padding: 10px; gap: 20px; align-items: flex-start; max-width: 700px;">
+        
+        <!-- Columna de texto: sesgos -->
+<!-- Columna de texto: sesgos -->
+<div style="flex: 1;">
+  <ul style="list-style-type: none; padding: 0;">
+    <li>
+      - Lectura de mente<br>
+      <span id="lectura-mente-ejemplo">&nbsp;</span>
+    </li><br>
+    <li>
+      - Opiniones como hechos<br>
+      <span id="opiniones-hechos-ejemplo">&nbsp;</span>
+    </li><br>
+    <li>
+      - Sensacionalismos / emocionalismo<br>
+      <span id="sensacionalismo-ejemplo">&nbsp;</span>
+    </li>
+  </ul>
+</div>
+
+
       
-        <h4>Actores principales</h4>
-        <div id="actores-container"></div>
-      
-        <h4>Análisis Crítico</h4>
-        <div id="analisis-critico">
-          <!-- Gráficos de tarta -->
-          <h5>Sentimientos</h5>
-          <canvas id="sentimientoChart" width="300" height="300"></canvas>
-
-          <h5>Discurso de odio</h5>
-          <canvas id="hateSpeechChart" width="300" height="300"></canvas>
-
-          <h5>Emociones</h5>
-          <canvas id="emocionesChart" width="300" height="300"></canvas>
-
-          <h5>Ironía</h5>
-          <canvas id="ironiaChart" width="300" height="300"></canvas>
+        <!-- Columna de gráficos -->
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <canvas id="sentimientoChart" width="200" height="200"></canvas>
+          <canvas id="polarizacionChart" width="250" height="80"></canvas>
         </div>
-
-        <h4>Noticias Similares</h4>
-        <div id="noticias-similares"></div>
+      
       </div>
+      
+      
+      <h4>Actores principales</h4>
+      <div id="actores-container"></div>
+
+      <h4>Noticias Similares</h4>
+      <div id="noticias-similares"></div>
     </div>
   </div>
+</div>
+
 
   <!-- Sección Chat -->
   <div class="section hidden" id="section-chat">

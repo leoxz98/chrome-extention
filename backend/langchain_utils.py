@@ -1,6 +1,31 @@
 # Analiza el siguiente texto noticioso y responde en formato JSON evaluando los siguientes aspectos:
+#0 resumen (highlights)
 #1. **Sesgo ideológico**: Detecta si el texto presenta una inclinación política o ideológica hacia alguna de las partes involucradas. Evalúa el nivel de sesgo en una escala de 1 (muy bajo) a 5 (muy alto). Agrega una breve justificación.
 #2. **Uso de estereotipos**: Indica si el texto usa generalizaciones, frases estigmatizantes o simplificaciones que puedan reforzar estereotipos. Evalúa en una escala de 1 a 5. Justifica brevemente.
+# se pueden agregar nuevos documentos a la revisión ya hecha?
+# como empezar a redactar el sgte avance (que cap, que contenido)?
+# un solo indicador y el resto texto
+# sintesis visual global
+# equibilibrio del texto 
+# sintesis
+# 1 resumen
+# 2 analisis del sesgo (indicador visual y en resumen escrito)
+# 3 actores y reseña
+# 4 articulos similares
+
+
+# circular: {'proporcion_sentimientos': {'NEG': 0.16666666666666666, 'POS': 0.0, 'NEU': 0.8333333333333334}
+# barra 'indice_polarizacion': 0.16666666666666666, color indicando 
+# resto gpt
+
+# tesis (documento)
+# 1 arquitectura de software y desarrollo(arquitectura -quienes son los usuarios- casos de uso - componentes - despliegue) (diagrama caso de uso y componenetes)
+# dentro de los componentes (mockup y diseño del reporte)
+# funcionamiento del agente (langchain - tools - prompt template)
+# 2 resultados (prueba del software, metricas , tablas , etc....) 
+# 3 pruebas de usuario (ellos eliguen las noticias)
+# (resumen del analisis critico ¿que info mostrar?)
+# pruebas (diseño y resultados) # definir metricas, tablas 
 
 from config import settings
 from datetime import datetime
@@ -21,7 +46,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers import pipeline
 import spacy
 from collections import Counter 
-
+from collections import defaultdict
 from pysentimiento import create_analyzer
 
 # Inicializar cliente con persistencia
@@ -33,25 +58,37 @@ embeddings = OpenAIEmbeddings(openai_api_key=settings.API_GPT)
 
 
 def analisis_profundo(text):
-    # https://github.com/pysentimiento/pysentimiento
-    # hate -> x.probas
-    # emotion -> y.probas
-    # irony -> z.probas
+    nlp = spacy.load("es_core_news_sm")
     hate_speech_analyzer = create_analyzer(task="hate_speech", lang="es")
-    emotion_analyzer = create_analyzer(task="emotion", lang="es")
-    irony_analyzer = create_analyzer(task="irony", lang="es")
-    x = hate_speech_analyzer.predict(text)
-    y = emotion_analyzer.predict(text)
-    z = irony_analyzer.predict(text)
 
-    resultado = {
-    "hate_speech": x.probas,
-    "emotion": y.probas,
-    "irony": z.probas
+    doc = nlp(text)
+    frases = [sent.text.strip() for sent in doc.sents]
+
+    suma_hateful = 0.0
+    suma_targeted = 0.0
+    suma_aggressive = 0.0
+    resultados = []
+
+    for i, frase in enumerate(frases, 1):
+        x = hate_speech_analyzer.predict(frase)
+        probas = x.probas
+        resultados.append({
+            "oracion": i,
+            "texto": frase,
+            "probas": probas
+        })
+        suma_hateful += probas.get("hateful", 0)
+        suma_targeted += probas.get("targeted", 0)
+        suma_aggressive += probas.get("aggressive", 0)
+
+    total = len(frases)
+    promedio = {
+        "odio": suma_hateful / total,
+        "odio dirigido": suma_targeted / total,
+        "tono agresivo": suma_aggressive / total
     }
 
-    return resultado
-
+    return promedio
 
 
 def analisis_sentimiento(text):
@@ -84,12 +121,10 @@ def analisis_sentimiento(text):
     }
     num_polarizadas = len([r for r in res if r["label"] in ("POS", "NEG")]) # frases polarizadas (un solo sentimiento)
     polarizacion = num_polarizadas / len(res) # proporcion
-    sentimiento_dominante = conteo.most_common(1)[0][0] # que predomina más
 
     resultado = {
         "proporcion_sentimientos": proporcion,
-        "indice_polarizacion": polarizacion, # pendiente de como mostrar
-        "sentimiento_dominante": sentimiento_dominante # pendiente de como mostrar
+        "indice_polarizacion": polarizacion # pendiente de como mostrar
     }
 
     return resultado
@@ -182,7 +217,7 @@ def buscar_por_embeddings(pregunta):
     return r
 
 # Crear las herramientas
-tools = [
+tools_a = [
     Tool(
         name="buscar_por_embeddings",
         func=buscar_por_embeddings,
@@ -190,9 +225,21 @@ tools = [
             Busca documentos relevantes en ChromaDB utilizando embeddings calculados de la pregunta.
             Cuando llames a esta herramienta el Action Input es solo el texto de la pregunta en string.
         """
-    ),
+    )
+]
+
+tools_b = [
     Tool(
-        name="Wikipedia Search",
+        name = "analisis_sentimiento",
+        func=analisis_sentimiento,
+        description="""entrega la proporcion de sentimientos, indice de polarizacion y el sentimiento dominante.
+        """
+    )
+]
+
+tools_c = [
+    Tool(
+        name="wikipedia_search",
         func=wikipedia_search,
         description="""
             Consulta Wikipedia para obtener un resumen sobre el tema.
@@ -205,133 +252,175 @@ tools = [
         description="""Busca y reporta el url de una imagen relacioanada al action input.
         el action input debe ser un string.
         """
-    ),
-        Tool(
-        name = "analisis profundo",
-        func=analisis_profundo,
-        description="""entrega un analisis del odio, la emoción y la ironia.
-        """
-    ),
-        Tool(
-        name = "analisis del sentimiento",
-        func=analisis_sentimiento,
-        description="""entrega la proporcion de sentimientos, indice de polarizacion y el sentimiento dominante.
-        """
     )
 ]
 
-# ¿Como mejorar el template para que el modelo no sea tan impredecible?
-prompt_template = """
-Eres un agente de inteligencia artificial que responde en español. El usuario te entregará una noticia. Tu tarea es analizarla utilizando las herramientas disponibles y construir una respuesta en **formato JSON completo y válido**.
+# 
+prompt_template_a = """Eres un asistente especializado en análisis de noticias. A partir del texto que se te proporciona, debes extraer la siguiente información en formato JSON:
 
-### Flujo de trabajo obligatorio:
-1. Lee y comprende la noticia entregada.
-2. Extrae los actores principales (máximo 3 personas individuales, no organizaciones), además su postura frente a la noticia (Positiva, Negativa o Neutra)
-3. Usa las herramientas disponibles en el siguiente orden:
-   - Para cada actor:
-     - Usa `Wikipedia Search` para obtener su perfil.
-     - Usa `buscar_y_mostrar_magen` para encontrar su foto.
-   - Aplica `analisis profundo` para obtener:
-     - hate_speech
-     - emotion
-     - irony
-   - Aplica `analisis del sentimiento` para obtener:
-     - proporcion_sentimientos
-     - indice_polarizacion
-     - sentimiento_dominante
-   - Usa `buscar_por_embeddings` para encontrar hasta 3 noticias similares.
+1. "titular": una frase corta que represente el título de la noticia.
+2. "resumen": una síntesis clara y concisa de los hechos más importantes, usando un máximo de 5 líneas.
+3. "noticias_similares": una lista de noticias relacionadas obtenidas mediante búsqueda por embeddings. Cada elemento debe contener:
+   - "titular": el título de la noticia similar.
+   - "enlace": la URL donde se puede consultar.
 
-4. **Antes de construir el JSON final, revisa si todos los datos han sido recolectados.**
+Para obtener las noticias similares, utiliza la herramienta `buscar_por_embeddings` con el texto completo como entrada. El resultado debe integrarse en el campo "noticias_similares".
 
-5. **Importante:**
-   - Si no encuentras información para un campo, deja el valor como `""`.
-   - Asegúrate que no haya datos repetidos.
-   - Asegúrate de cerrar correctamente todos los corchetes `{}` y llaves `[]`.
-   - No repitas bloques como emociones o noticias similares.
-   - No agregues texto fuera del JSON.
-   - Siempre mantén los valores numéricos como **decimales** (por ejemplo: 0.15).
-   - No transformes ni conviertas unidades numéricas.
+Responde exclusivamente en formato JSON con las claves "titular", "resumen" y "noticias_similares".
 
-### Herramientas disponibles:
-- `Wikipedia Search`
-- `buscar_y_mostrar_magen`
-- `analisis profundo`
-- `analisis del sentimiento`
-- `buscar_por_embeddings`
+IMPORTANTE: No debes inventar las noticias similares ni usar tu conocimiento previo para generarlas. Estas deben provenir únicamente de la herramienta `buscar_por_embeddings`.
 
-### Formato de respuesta final:
+Ejemplo de salida esperada:
 {
-  "titular": "Título de la noticia principal",
+  "titular": "Terremoto de magnitud 7,2 sacude el norte de Chile",
+  "resumen": "Un sismo de gran magnitud se registró esta madrugada en la zona norte del país, provocando daños menores y cortes de energía. No se reportan víctimas fatales. Las autoridades monitorean posibles réplicas. El SHOA descartó riesgo de tsunami. La ONEMI activó protocolos de emergencia.",
+  "noticias_similares": [
+    {
+      "titular": "Fuerte sismo afecta región de Antofagasta sin dejar víctimas",
+      "enlace": "https://ejemplo.com/noticia1"
+    },
+    {
+      "titular": "ONEMI activa protocolos tras sismo en el norte",
+      "enlace": "https://ejemplo.com/noticia2"
+    }
+  ]
+}
+"""
+
+# Analisis del sesgo
+prompt_template_b = """Eres un asistente experto en análisis crítico de noticias en español. Sigue los pasos estrictamente para entregar el análisis solicitado, en el formato requerido.
+
+PASO 1: Lee cuidadosamente el texto de la noticia entregado por el usuario.
+
+PASO 2: Analiza la noticia en busca de los siguientes sesgos discursivos:
+- Opiniones expresadas como hechos
+- Lenguaje sensacionalista o emocional
+- Afirmaciones que intenten leer la mente (atribuir pensamientos, intenciones o sentimientos sin evidencia)
+
+Para cada tipo de sesgo, indica si está presente (`true` o `false`) y proporciona una lista corta de frases o fragmentos textuales como ejemplos si corresponde.
+
+PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin ninguna explicación adicional:
+
+```json
+{
+  "sesgos": {
+    "opiniones_como_hechos": {
+      "presente": true,
+      "ejemplos": ["..."]
+    },
+    "sensacionalismo_emocionalismo": {
+      "presente": false,
+      "ejemplos": []
+    },
+    "lectura_de_mente": {
+      "presente": true,
+      "ejemplos": ["..."]
+    }
+  }
+}
+
+ """
+
+# Actores 
+prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identificar hasta 3 actores principales (personas) mencionados en la siguiente noticia. Para cada uno, debes:
+
+1. Indicar su nombre completo.
+2. Determinar su postura frente al hecho (a favor o en contra, y por qué) en un máximo de 2 líneas. Usa únicamente el contenido de la noticia para esta parte.
+3. Buscar el URL de una imagen representativa usando la herramienta `buscar_y_mostrar_imagen` (el input debe ser su nombre completo como string).
+4. Consultar su perfil profesional en Wikipedia usando la herramienta `wikipedia_search`, también con su nombre completo en formato Nombre_Apellido.
+
+**Tu respuesta debe ser exclusivamente en formato JSON**, con la siguiente estructura:
+
+{
   "actores_principales": [
     {
       "nombre": "Nombre completo",
       "foto_url": "URL de imagen",
       "postura": "Postura frente al hecho",
-      "perfil": "Rol o profesión"
-    }
-  ],
-  "analisis_critico": {
-    "analisis_sentimiento": {
-      "proporcion_sentimientos": {
-        "NEU": "valor en porcentaje",
-        "NEG": "valor en porcentaje",
-        "POS": "valor en porcentaje"
-      },
-      "indice_polarizacion": valor_numérico,
-      "sentimiento_dominante": "valor textual"
+      "perfil": "Rol o profesión o descripción breve según Wikipedia"
     },
-    "analisis_profundo": {
-      "hate_speech": {
-        "hateful": valor_numérico,
-        "targeted": valor_numérico,
-        "aggressive": valor_numérico
-      },
-      "emotion": {
-        "others": valor_numérico,
-        "joy": valor_numérico,
-        "sadness": valor_numérico,
-        "anger": valor_numérico,
-        "surprise": valor_numérico,
-        "disgust": valor_numérico,
-        "fear": valor_numérico
-      },
-      "irony": {
-        "not ironic": valor_numérico,
-        "ironic": valor_numérico
-      }
-    }
-  },
-  "noticias_similares": [
-    {
-      "titular": "Título de noticia similar",
-      "enlace": "URL de la noticia"
-    }
+    ...
   ]
 }
+
+Instrucciones importantes:
+- Solo incluye personas. No incluyas organizaciones, instituciones ni entidades colectivas.
+- Si hay menos de 3 personas relevantes, incluye solo las que correspondan.
+- No utilices ninguna herramienta que no sea `buscar_y_mostrar_imagen` o `wikipedia_search`, y solo para los campos indicados.
+- **No agregues explicaciones fuera del JSON.**
 
 """
 
 
-# ¿ se puede ajustar algo aqui para mejorar el modelo?
+# Configuración del modelo
 llm = ChatOpenAI(temperature=0.7, openai_api_key=settings.API_GPT)
-prompt = PromptTemplate(input_variables=["query"], template=prompt_template)
-memory = ConversationBufferWindowMemory(k=5)
-agent = initialize_agent(
-    tools=tools,
+
+
+# Memorias independientes por agente
+memory_a = ConversationBufferWindowMemory(k=5)
+memory_b = ConversationBufferWindowMemory(k=5)
+memory_c = ConversationBufferWindowMemory(k=5)
+
+# Agente A con herramientas de embeddings
+agent_a = initialize_agent(
+    tools=tools_a,
     llm=llm,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    memory = memory,
-    handle_parsing_errors = True,
+    memory=memory_a,
+    handle_parsing_errors=True,
     verbose=True
 )
 
+# Agente B con herramientas de análisis
+agent_b = initialize_agent(
+    tools=tools_b,
+    llm=llm,
+    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    memory=memory_b,
+    handle_parsing_errors=True,
+    verbose=True
+)
+
+# Agente C con herramientas de búsqueda en Wikipedia e imágenes
+agent_c = initialize_agent(
+    tools=tools_c,
+    llm=llm,
+    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    memory=memory_c,
+    handle_parsing_errors=True,
+    verbose=True
+)
+
+
+
 def getResponse(query):
-    response = agent.run(prompt_template + "Noticia del usuario: " + query)
+    response_a = agent_a.run(prompt_template_a + "Noticia del usuario: " + query)
+    print("paso 1")
+    response_b = llm.predict(prompt_template_b + query)
+    print("paso 2")
+    response_c = agent_c.run(prompt_template_c + "Noticia del usuario: " + query)
+    print("paso 3")
+    response_d = analisis_sentimiento(query)
+    print("paso 4")
+
     try:
-        parsed = json.loads(response) 
-        return JSONResponse(content=parsed)
+        # Convertir todos los strings JSON a diccionarios Python
+        parsed_a = json.loads(response_a)
+        parsed_b = json.loads(response_b)
+        parsed_c = json.loads(response_c)
+        parsed_d = response_d if isinstance(response_d, dict) else json.loads(response_d)
+
+        # Unir todos los diccionarios en uno solo (plano)
+        combined = {**parsed_a, **parsed_b, **parsed_c, **parsed_d}
+        print(json.dumps(combined, indent=2, ensure_ascii=False))
+        return JSONResponse(content=combined)
+
     except json.JSONDecodeError as e:
         return JSONResponse(
             status_code=500,
-            content={"error": "Respuesta del modelo no es JSON válido", "detalle": str(e)}
+            content={
+                "error": "Alguna respuesta no es JSON válido",
+                "detalle": str(e)
+            }
         )
+
