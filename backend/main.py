@@ -1,9 +1,21 @@
-from fastapi import FastAPI
+# bug al cargar el historial del chat desde chrome storage <- 
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from config import settings
 from langchain_utils import getResponse  
 import json
+import os
+from openai import OpenAI
+from config import settings
+
+client = OpenAI(api_key=settings.API_GPT)
+ 
+
+class ChatInput(BaseModel):
+    message: str
+    history: list  # Lista de pares (rol, contenido), para mantener contexto
 
 class TextRequest(BaseModel):
     text: str
@@ -91,4 +103,28 @@ async def analyze(req: TextRequest):
     return r
     #return json.loads(result)
 
+@app.post("/chat")
+async def chat(input: ChatInput):
+    # Empieza el contexto con un mensaje de sistema si quieres dar instrucciones
+    messages = [{"role": "system", "content": "Eres un asistente útil que responde preguntas sobre noticias."}]
+    
+    # Agrega el historial del usuario
+    messages += [
+    {"role": role, "content": content}
+    for role, content in input.history
+    if isinstance(content, str) and isinstance(role, str)
+]
 
+    
+    # Agrega el nuevo mensaje del usuario
+    messages.append({"role": "user", "content": input.message})
+
+    
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=0.7
+    )
+
+    reply = response.choices[0].message.content
+    return {"reply": reply}

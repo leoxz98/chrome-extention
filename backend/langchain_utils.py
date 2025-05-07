@@ -297,7 +297,7 @@ PASO 2: Analiza la noticia en busca de los siguientes sesgos discursivos:
 - Lenguaje sensacionalista o emocional
 - Afirmaciones que intenten leer la mente (atribuir pensamientos, intenciones o sentimientos sin evidencia)
 
-Para cada tipo de sesgo, indica si está presente (`true` o `false`) y proporciona una lista corta de frases o fragmentos textuales como ejemplos si corresponde.
+Para cada tipo de sesgo, indica si está presente (`true` o `false`) y proporciona un porqué de su presencia en la noticia si corresponde, además no debe ser como mucho 3 lineas de texto de largo.
 
 PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin ninguna explicación adicional:
 
@@ -306,15 +306,15 @@ PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin nin
   "sesgos": {
     "opiniones_como_hechos": {
       "presente": true,
-      "ejemplos": ["..."]
+      "porque": ["..."]
     },
     "sensacionalismo_emocionalismo": {
       "presente": false,
-      "ejemplos": []
+      "porque": []
     },
     "lectura_de_mente": {
       "presente": true,
-      "ejemplos": ["..."]
+      "porque": ["..."]
     }
   }
 }
