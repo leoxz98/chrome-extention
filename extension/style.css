@@ -33,9 +33,18 @@ body {
   background-color: #3d566e;
 }
 
+#clear-btn {
+  color: rgb(250, 241, 241);
+  background-color: red;
+  position:absolute;
+  top: 10px;
+  right:0;
+}
+
 /* Secciones generales */
 .section {
   padding: 30px;
+  
 }
 
 .hidden {
@@ -127,4 +136,160 @@ canvas {
   border-radius: 6px;
   padding: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+
+/**/
+
+
+/* Contenedor del chat */
+#chat {
+  width: 100%;
+  max-width: 600px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  padding: 10px;
+  margin-top: -50px;
+}
+
+/* Estilos para el área de mensajes */
+#messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 10px;
+  border-radius: 15px;
+  word-wrap: break-word;
+}
+
+.message-bubble.user {
+  align-self: flex-end;        /* Ahora el usuario está a la derecha */
+  background-color: #e0f7fa;
+  text-align: left;
+}
+
+.message-bubble.assistant {
+  align-self: flex-start;      /* GPT está a la izquierda */
+  background-color: #dcedc8;
+  text-align: left;
+}
+
+
+
+/* Estilos para el input del usuario */
+#user-input {
+  padding: 10px;
+  border: none;
+  border-top: 1px solid #ddd;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  border-radius: 10px;
+}
+
+/* Estilos para el botón de enviar */
+#send {
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+#send:hover {
+  background-color: #0056b3;
+}
+
+/* Estilos para los mensajes */
+#messages .message {
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background-color: #f1f1f1;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+#messages .message.user {
+  background-color: #007BFF;
+  color: white;
+  margin-left: auto;
+}
+
+#messages .message.bot {
+  background-color: #f1f1f1;
+  color: black;
+}
+
+
+
+#section-share {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px auto;
+  max-width: 500px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+#section-share h4 {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+#share {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#share button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin: 6px 0;
+  cursor: pointer;
+  font-size: 0.95rem;
+  width: 80%;
+  transition: background-color 0.3s;
+}
+
+#share button:hover {
+  background-color: #0056b3;
+}
+
+/* Botones específicos (opcional para diferenciar colores) */
+#cwsp {
+  background-color: #25d366;
+}
+
+#cwsp:hover {
+  background-color: #1ebe57;
+}
+
+#cx {
+  background-color: #000;
+}
+
+#cx:hover {
+  background-color: #333;
 }

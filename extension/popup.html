@@ -6,6 +6,8 @@
   <link rel="stylesheet" href="style.css" />
   <!-- Incluimos Chart.js -->
   <script src="chart.umd.js"></script>
+  <script src="html2pdf.bundle.min.js"></script>
+
 
 </head>
 <body>
@@ -15,9 +17,8 @@
     <button class="tab-button" id="btn-home">🏠 Inicio</button>
     <button class="tab-button" id="btn-result">📊 Análisis</button>
     <button class="tab-button" id="btn-chat">💬 Chat IA</button>
+    <button class="tab-button" id="share-btn">Compartir</button>
     <button class="tab-button" id="clear-btn">Borrar todo</button>
-    <button class="tab-button" id="descargar-btn">Descargar</button>
-
   </div>
 
   <!-- Sección Inicio -->
@@ -46,24 +47,11 @@
       <h4>Sesgos Detectados</h4>
       <div style="display: flex; border: 1px solid black; padding: 10px; gap: 20px; align-items: flex-start; max-width: 700px;">
         
-        <!-- Columna de texto: sesgos -->
 <!-- Columna de texto: sesgos -->
 <div style="flex: 1;">
-  <ul style="list-style-type: none; padding: 0;">
-    <li>
-      - Lectura de mente<br>
-      <span id="lectura-mente-ejemplo">&nbsp;</span>
-    </li><br>
-    <li>
-      - Opiniones como hechos<br>
-      <span id="opiniones-hechos-ejemplo">&nbsp;</span>
-    </li><br>
-    <li>
-      - Sensacionalismos / emocionalismo<br>
-      <span id="sensacionalismo-ejemplo">&nbsp;</span>
-    </li>
-  </ul>
+  <ul id="lista-sesgos" style="list-style-type: none; padding: 0;"></ul>
 </div>
+
 
 
       
@@ -81,6 +69,7 @@
 
       <h4>Noticias Similares</h4>
       <div id="noticias-similares"></div>
+      
     </div>
   </div>
 </div>
@@ -89,10 +78,28 @@
   <!-- Sección Chat -->
   <div class="section hidden" id="section-chat">
     <div class="content">
-      <h2>Chat IA</h2>
-      <p>Próximamente: chat con GPT...</p>
+      <div id="chat">
+        <div id="messages"></div>
+        <input id="user-input" placeholder="Escribe tu mensaje..." />
+        <button id="send">Enviar</button>
+      </div>
     </div>
   </div>
+
+  <!-- Sección compartir -->
+  <div class="section hidden" id="section-share">
+    <div class="content">
+      <div id="share">
+        <h4>Descargar</h4>
+        <button id="djson">Json</button>
+        <button id="dpdf">Pdf</button>
+        <h4>Compartir</h4>
+        <button id="cwsp">Whatsapp</button>
+        <button id="cx">XdotCom</button>
+      </div>
+    </div>
+  </div>
+
 
   <script src="popup.js"></script>
 </body>

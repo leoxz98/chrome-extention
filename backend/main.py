@@ -46,7 +46,7 @@ async def analyze(req: TextRequest):
 
     result = """{
   "titular": "Abbas y Macron exigen fin de la guerra y ayuda para Gaza",
-  "resumen": "Los presidentes de Palestina, Mahmoud Abbas, y de Francia, Emmanuel Macron, reclamaron un alto el fuego en Gaza y la entrada de ayuda humanitaria. Macron y Abbas defienden la solución de dos Estados para el conflicto. Netanyahu criticó a Macron por su apoyo a la creación de un Estado palestino.",
+  "resumen": "Los presidentes de Palestina, Mahmoud Abbas, y de Francia, Emmanuel Macron, reclamaron hoy un alto el fuego en Gaza y exigieron a Israel permitir la entrada de ayuda humanitaria al territorio. Macron y Abbas defendieron la implementación de la solución de dos Estados para acabar con el histórico diferendo, como exigen varias resoluciones del Consejo de Seguridad de la ONU.",  
   "noticias_similares": [
     {
       "titular": "Trump dice que hay 'progresos' en las negociaciones entre Israel y Hamás para un alto el fuego",
@@ -58,39 +58,57 @@ async def analyze(req: TextRequest):
     }
   ],
   "sesgos": {
-    "opiniones_como_hechos": {
+    "Unsubstantiated claims bias": {
       "presente": false,
-      "ejemplos": []
+      "porque": []
     },
-    "sensacionalismo_emocionalismo": {
+    "Opinion statements presented as facts": {
       "presente": false,
-      "ejemplos": []
+      "porque": []
     },
-    "lectura_de_mente": {
+    "Sensationalism or Emotionalism": {
+      "presente": false,
+      "porque": []
+    },
+    "Ad Hominem or Mudslinging": {
       "presente": true,
-      "ejemplos": [
-        "'Coincidieron en que la Autoridad Nacional Palestina debe asumir la responsabilidad en ese territorio'"
+      "porque": [
+        "Se menciona un ataque de Netanyahu y su hijo Yair contra Macron, lo cual podría considerarse un ataque personal."
       ]
+    },
+    "Mind reading": {
+      "presente": false,
+      "porque": []
+    },
+    "Slant bias": {
+      "presente": false,
+      "porque": []
+    },
+    "Subjective qualifying adjectives": {
+      "presente": false,
+      "porque": []
+    },
+    "Bias by labeling and word choice": {
+      "presente": false,
+      "porque": []
+    },
+    "Flawed logic": {
+      "presente": false,
+      "porque": []
     }
   },
   "actores_principales": [
     {
       "nombre": "Mahmoud Abbas",
       "foto_url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Mahmoud_Abbas_2024.jpg",
-      "postura": "Reclama un alto el fuego en Gaza y exige a Israel permitir la entrada de ayuda humanitaria al territorio.",
-      "perfil": "Mahmoud Abbas es un político palestino que actualmente se desempeña como presidente de Palestina desde el 15 de enero de 2005."
+      "postura": "Reclama un alto el fuego en Gaza y exige a Israel permitir la entrada de ayuda humanitaria al territorio.",      
+      "perfil": "Mahmoud Abbas es un político palestino que se desempeña como presidente de Palestina desde 2005. Es miembro de Fatah y ha sido un defensor de la solución de dos Estados para el conflicto israelí-palestino."
     },
     {
       "nombre": "Emmanuel Macron",
       "foto_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Emmanuel_Macron_February_2025.jpg",
-      "postura": "Defiende la implementación de la solución de dos Estados para acabar con el histórico diferendo.",
-      "perfil": "Emmanuel Macron es un economista y político francés, vigesimoquinto presidente de la República Francesa desde 2017."
-    },
-    {
-      "nombre": "Benjamín Netanyahu",
-      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/7/74/Benjamin_Netanyahu%2C_February_2023.jpg",
-      "postura": "Rechaza la creación de un Estado palestino y cualquier plan para desplazar por la fuerza a los habitantes del enclave costero.",
-      "perfil": "Benjamín Netanyahu es un político israelí que actualmente se desempeña como primer ministro de Israel desde diciembre de 2022."
+      "postura": "Defiende la creación de un Estado palestino, idea que rechaza Israel.",
+      "perfil": "Emmanuel Macron es un político francés que actualmente se desempeña como presidente de Francia desde 2017. Anteriormente fue ministro de Economía, Industria y Asuntos Digitales en el gobierno de François Hollande."
     }
   ],
   "proporcion_sentimientos": {
@@ -98,7 +116,7 @@ async def analyze(req: TextRequest):
     "POS": 0.0,
     "NEU": 0.8333333333333334
   },
-  "indice_polarizacion": 0.16666666666666666
+  "indice_polarizacion": 0.55555555555
 }"""
     return r
     #return json.loads(result)

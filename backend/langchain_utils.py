@@ -91,17 +91,24 @@ def analisis_profundo(text):
     return promedio
 
 
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+import spacy
+from collections import Counter
+
 def analisis_sentimiento(text):
+    # https://help.sesamm.com/article/32-sentiment-polarity
     model_name = "finiteautomata/beto-sentiment-analysis"
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+
     nlp = spacy.load("es_core_news_sm")
     doc = nlp(text)
-    frases = [sent.text.strip() for sent in doc.sents] #division en frases
+    frases = [sent.text.strip() for sent in doc.sents]
+
     res = []
     id = 1
-    for oracion in frases: # Calculo de sentimiento por cada oracion
+    for oracion in frases:
         x = sentiment_pipeline(oracion)[0]
         res.append({
             "oracion": id,
@@ -110,24 +117,28 @@ def analisis_sentimiento(text):
         })
         id += 1
 
-    labels = [r["label"] for r in res] # calculo de totales
+    labels = [r["label"] for r in res]
     conteo = Counter(labels)
     total = len(res)
-    
+
     proporcion = {
         "NEG": conteo.get("NEG", 0) / total,
         "POS": conteo.get("POS", 0) / total,
         "NEU": conteo.get("NEU", 0) / total
     }
-    num_polarizadas = len([r for r in res if r["label"] in ("POS", "NEG")]) # frases polarizadas (un solo sentimiento)
-    polarizacion = num_polarizadas / len(res) # proporcion
+
+    # Polaridad general del artículo
+    pos = proporcion["POS"]
+    neg = proporcion["NEG"]
+    polaridad = (pos - neg) / (pos + neg + 1e-6)  # evitar división por cero
 
     resultado = {
         "proporcion_sentimientos": proporcion,
-        "indice_polarizacion": polarizacion # pendiente de como mostrar
+        "indice_polarizacion": polaridad  # polaridad según la fórmula (-1 a 1)
     }
 
     return resultado
+
 
 
 # Función para búsqueda en Wikipedia (funciona!)
@@ -293,9 +304,15 @@ prompt_template_b = """Eres un asistente experto en análisis crítico de notici
 PASO 1: Lee cuidadosamente el texto de la noticia entregado por el usuario.
 
 PASO 2: Analiza la noticia en busca de los siguientes sesgos discursivos:
-- Opiniones expresadas como hechos
-- Lenguaje sensacionalista o emocional
-- Afirmaciones que intenten leer la mente (atribuir pensamientos, intenciones o sentimientos sin evidencia)
+- Unsubstantiated claims bias
+- Opinion statements presented as facts
+- Sensationalism or Emotionalism
+- Ad Hominem or Mudslinging
+- Mind reading
+- Slant bias
+- Subjective qualifying adjectives
+- Bias by labeling and word choice
+- Flawed logic
 
 Para cada tipo de sesgo, indica si está presente (`true` o `false`) y proporciona un porqué de su presencia en la noticia si corresponde, además no debe ser como mucho 3 lineas de texto de largo.
 
@@ -304,15 +321,15 @@ PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin nin
 ```json
 {
   "sesgos": {
-    "opiniones_como_hechos": {
+    "Sesgo A": {
       "presente": true,
       "porque": ["..."]
     },
-    "sensacionalismo_emocionalismo": {
+    "Sesgo B": {
       "presente": false,
       "porque": []
     },
-    "lectura_de_mente": {
+    "Sesgo C": {
       "presente": true,
       "porque": ["..."]
     }
