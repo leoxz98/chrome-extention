@@ -49,6 +49,7 @@ from collections import Counter
 from collections import defaultdict
 from pysentimiento import create_analyzer
 
+
 # Inicializar cliente con persistencia
 client = chromadb.PersistentClient(path="./chroma_db")  
 doc_collection = client.get_or_create_collection("prototipoDB")
@@ -91,23 +92,19 @@ def analisis_profundo(text):
     return promedio
 
 
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
-import spacy
-from collections import Counter
 
+# https://help.sesamm.com/article/32-sentiment-polarity
 def analisis_sentimiento(text):
-    # https://help.sesamm.com/article/32-sentiment-polarity
     model_name = "finiteautomata/beto-sentiment-analysis"
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
-
     nlp = spacy.load("es_core_news_sm")
     doc = nlp(text)
     frases = [sent.text.strip() for sent in doc.sents]
-
     res = []
     id = 1
+    
     for oracion in frases:
         x = sentiment_pipeline(oracion)[0]
         res.append({
@@ -125,16 +122,14 @@ def analisis_sentimiento(text):
         "NEG": conteo.get("NEG", 0) / total,
         "POS": conteo.get("POS", 0) / total,
         "NEU": conteo.get("NEU", 0) / total
-    }
-
-    # Polaridad general del artículo
+    } 
     pos = proporcion["POS"]
     neg = proporcion["NEG"]
-    polaridad = (pos - neg) / (pos + neg + 1e-6)  # evitar división por cero
+    polaridad = (pos - neg) / (pos + neg)  
 
     resultado = {
         "proporcion_sentimientos": proporcion,
-        "indice_polarizacion": polaridad  # polaridad según la fórmula (-1 a 1)
+        "indice_polarizacion": polaridad  
     }
 
     return resultado

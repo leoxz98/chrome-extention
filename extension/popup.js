@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.storage.local.get(["savedText", "savedResult", "chatHistory"], (data) => {
     if (data.savedText) {
       textarea.value = data.savedText;
+      text = data.savedText;
       canAccessResult = true;
       canAccessChat = true;
       canAccessShare = true;
@@ -185,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.getElementById("send").addEventListener("click", async () => {
   const input = document.getElementById("user-input").value.trim();
-  
+  //alert(firstMjs);
 
   if (!input) return;
 
@@ -264,7 +265,7 @@ document.getElementById('djson').addEventListener('click', function() {
 });
 
 document.getElementById("dpdf").addEventListener("click", () => {
-  alert("test");
+  //alert("test");
   const element = document.getElementById("result-container");
   const wasHidden = element.classList.contains("hidden");
   if (wasHidden) element.classList.remove("hidden");
@@ -325,18 +326,30 @@ Promise.all(
 );
 
  // Gráfico de sentimientos
- const sentimientosData = data.proporcion_sentimientos;
- const ctxSentimiento = document.getElementById('sentimientoChart').getContext('2d');
- sentimientoChartInstance = new Chart(ctxSentimiento, {
-   type: 'pie',
-   data: {
-     labels: Object.keys(sentimientosData),
-     datasets: [{
-       data: Object.values(sentimientosData),
-       backgroundColor: ['#FFCC00', '#FF3300', '#66CC66']
-     }]
-   },
-   options: {
+const sentimientosData = data.proporcion_sentimientos;
+const ctxSentimiento = document.getElementById('sentimientoChart').getContext('2d');
+
+// Orden y colores fijos: NEG → rojo, NEU → azul, POS → verde
+const etiquetas = ['NEG', 'NEU', 'POS'];
+const colores = {
+  NEG: '#FF3300', // rojo
+  NEU: '#3399FF', // azul
+  POS: '#66CC66'  // verde
+};
+
+const valores = etiquetas.map(etiqueta => sentimientosData[etiqueta] || 0);
+const coloresOrdenados = etiquetas.map(etiqueta => colores[etiqueta]);
+
+sentimientoChartInstance = new Chart(ctxSentimiento, {
+  type: 'pie',
+  data: {
+    labels: ['Negativo', 'Neutro', 'Positivo'],
+    datasets: [{
+      data: valores,
+      backgroundColor: coloresOrdenados
+    }]
+  },
+  options: {
     plugins: {
       title: {
         display: true,
@@ -348,12 +361,12 @@ Promise.all(
           top: 0,
           bottom: 0
         }
-      },
-      // ...otros plugins
+      }
     },
     responsive: false
-   }
- });
+  }
+});
+
 
  // Índice de polarización
   const indicePolarizacion = data.indice_polarizacion; 

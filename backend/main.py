@@ -1,5 +1,4 @@
 # bug al cargar el historial del chat desde chrome storage <- 
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -112,9 +111,9 @@ async def analyze(req: TextRequest):
     }
   ],
   "proporcion_sentimientos": {
-    "NEG": 0.16666666666666666,
-    "POS": 0.0,
-    "NEU": 0.8333333333333334
+    "NEG": 0.3333333333333333,
+    "POS": 0.3333333333333333,
+    "NEU": 0.3333333333333333
   },
   "indice_polarizacion": 0.55555555555
 }"""
