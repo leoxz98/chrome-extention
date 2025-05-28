@@ -1,4 +1,4 @@
-# bug al cargar el historial del chat desde chrome storage <- 
+# bug al borrar algo y darle cuanto esta vacio y despues darle a copiar
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -9,14 +9,27 @@ import os
 from openai import OpenAI
 from config import settings
 
-client = OpenAI(api_key=settings.API_GPT)
+client = OpenAI(api_key=settings.API_GPT) # archivo .env
  
 
 class ChatInput(BaseModel):
+    """
+    Define el esquema de entrada para la solicitud de chat.
+
+    Attributes:
+        message (str): El mensaje actual del usuario.
+        history (List[Tuple[str, str]]): Historial de la conversación como una lista
+                                         de tuplas (rol, contenido del mensaje).
+    """
     message: str
-    history: list  # Lista de pares (rol, contenido), para mantener contexto
+    history: list  
 
 class TextRequest(BaseModel):
+    """
+    Define el esquema de entrada para la solicitud de análisis de texto.
+    Attributes: 
+      text (str): El texto del artículo de noticias a ser analizado.
+    """
     text: str
 
 app = FastAPI()
@@ -36,112 +49,81 @@ def read_root():
 
 @app.post("/analyze")
 async def analyze(req: TextRequest):
+    """
+    Gestiona las solicitudes para realizar un análisis crítico de un texto de noticias.
+
+    Recibe el texto del usuario, lo pasa a un agente de LangChain (definido en `langchain_utils.py`),
+    y devuelve el resultado del análisis. Este endpoint es el punto de entrada para
+    procesar el contenido del artículo de noticias.
+
+    Args:
+        req (TextRequest): Un objeto que contiene el texto del artículo de noticias
+                           que se desea analizar.
+
+    Returns:
+        dict: Un diccionario que contiene el resultado del análisis proporcionado
+              por el agente de LangChain.
+
+    Raises:
+        HTTPException: Puede lanzar una excepción si el procesamiento en `getResponse` falla
+                       o si hay un error de validación del esquema de entrada.
+    """
     user_text = req.text
     print(f"Texto recibido: {user_text}")
     print("\n  -------- \n")
-    r = getResponse(user_text)
-    #print(type(r))
-    print("aqui")
-
-    result = """{
-  "titular": "Abbas y Macron exigen fin de la guerra y ayuda para Gaza",
-  "resumen": "Los presidentes de Palestina, Mahmoud Abbas, y de Francia, Emmanuel Macron, reclamaron hoy un alto el fuego en Gaza y exigieron a Israel permitir la entrada de ayuda humanitaria al territorio. Macron y Abbas defendieron la implementación de la solución de dos Estados para acabar con el histórico diferendo, como exigen varias resoluciones del Consejo de Seguridad de la ONU.",  
-  "noticias_similares": [
-    {
-      "titular": "Trump dice que hay 'progresos' en las negociaciones entre Israel y Hamás para un alto el fuego",
-      "enlace": "https://www.diarioestrategia.cl/texto-diario/mostrar/5252680/trump-dice-hay-progresos-negociaciones-entre-israel-hamas-alto-fuego"
-    },
-    {
-      "titular": "Reacciones en Francia ante eventual reconocimiento de Palestina",
-      "enlace": "https://www.prensa-latina.cu/2025/04/10/reacciones-en-francia-ante-eventual-reconocimiento-de-palestina/"
-    }
-  ],
-  "sesgos": {
-    "Unsubstantiated claims bias": {
-      "presente": false,
-      "porque": []
-    },
-    "Opinion statements presented as facts": {
-      "presente": false,
-      "porque": []
-    },
-    "Sensationalism or Emotionalism": {
-      "presente": false,
-      "porque": []
-    },
-    "Ad Hominem or Mudslinging": {
-      "presente": true,
-      "porque": [
-        "Se menciona un ataque de Netanyahu y su hijo Yair contra Macron, lo cual podría considerarse un ataque personal."
-      ]
-    },
-    "Mind reading": {
-      "presente": false,
-      "porque": []
-    },
-    "Slant bias": {
-      "presente": false,
-      "porque": []
-    },
-    "Subjective qualifying adjectives": {
-      "presente": false,
-      "porque": []
-    },
-    "Bias by labeling and word choice": {
-      "presente": false,
-      "porque": []
-    },
-    "Flawed logic": {
-      "presente": false,
-      "porque": []
-    }
-  },
-  "actores_principales": [
-    {
-      "nombre": "Mahmoud Abbas",
-      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Mahmoud_Abbas_2024.jpg",
-      "postura": "Reclama un alto el fuego en Gaza y exige a Israel permitir la entrada de ayuda humanitaria al territorio.",      
-      "perfil": "Mahmoud Abbas es un político palestino que se desempeña como presidente de Palestina desde 2005. Es miembro de Fatah y ha sido un defensor de la solución de dos Estados para el conflicto israelí-palestino."
-    },
-    {
-      "nombre": "Emmanuel Macron",
-      "foto_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Emmanuel_Macron_February_2025.jpg",
-      "postura": "Defiende la creación de un Estado palestino, idea que rechaza Israel.",
-      "perfil": "Emmanuel Macron es un político francés que actualmente se desempeña como presidente de Francia desde 2017. Anteriormente fue ministro de Economía, Industria y Asuntos Digitales en el gobierno de François Hollande."
-    }
-  ],
-  "proporcion_sentimientos": {
-    "NEG": 0.3333333333333333,
-    "POS": 0.3333333333333333,
-    "NEU": 0.3333333333333333
-  },
-  "indice_polarizacion": 0.55555555555
-}"""
+    r = getResponse(user_text) # agente de langchain en langchain_utils.py
     return r
-    #return json.loads(result)
+    
 
 @app.post("/chat")
 async def chat(input: ChatInput):
-    # Empieza el contexto con un mensaje de sistema si quieres dar instrucciones
-    messages = [{"role": "system", "content": "Eres un asistente útil que responde preguntas sobre noticias."}]
+    """
+    Gestiona las solicitudes de chat para interactuar con un modelo de lenguaje.
+
+    Construye el contexto de la conversación incluyendo un mensaje de sistema,
+    el historial de la conversación del usuario y el mensaje actual.
+    Luego, envía esta secuencia de mensajes a un modelo de lenguaje (ej. GPT-3.5-turbo)
+    y devuelve la respuesta generada.
+
+    Args:
+        input (ChatInput): Un objeto que contiene el mensaje actual del usuario
+                           y el historial de la conversación.
+
+    Returns:
+        dict: Un diccionario que contiene la respuesta del modelo bajo la clave "reply".
+              Ejemplo: {"reply": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+
+    Raises:
+        HTTPException: Puede lanzar una excepción si la comunicación con la API
+                       del modelo de lenguaje falla o si hay un error de validación
+                       (gestionado por FastAPI/Pydantic implícitamente).
+    """
     
-    # Agrega el historial del usuario
+    # Inicializa la lista de mensajes con un rol de sistema para establecer el comportamiento del LLM.
+    # Esto le indica al modelo cómo debe actuar (e.g., "Eres un asistente útil...").
+    messages = [{"role": "system", "content": "Eres un asistente útil que responde preguntas sobre noticias."}]
     messages += [
     {"role": role, "content": content}
     for role, content in input.history
     if isinstance(content, str) and isinstance(role, str)
 ]
-
-    
-    # Agrega el nuevo mensaje del usuario
+    # Agrega el mensaje actual del usuario al final del contexto de la conversación.
     messages.append({"role": "user", "content": input.message})
 
-    
+    # Realiza la llamada a la API del modelo de lenguaje.
+    # 'model': Especifica el modelo a utilizar (ej. "gpt-3.5-turbo").
+    # 'messages': La secuencia completa de la conversación (sistema, historial, usuario).
+    # 'temperature': Controla la aleatoriedad de la respuesta del modelo (0.7 es un valor común
+    #                para respuestas equilibradas, no demasiado creativas ni demasiado predecibles).  
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=messages,
         temperature=0.7
     )
 
+    # Extrae el contenido de la respuesta del modelo.
+    # Se asume que la respuesta exitosa tendrá al menos una elección.
     reply = response.choices[0].message.content
+
+     # Devuelve la respuesta del modelo al cliente.
     return {"reply": reply}

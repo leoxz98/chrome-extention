@@ -1,32 +1,3 @@
-# Analiza el siguiente texto noticioso y responde en formato JSON evaluando los siguientes aspectos:
-#0 resumen (highlights)
-#1. **Sesgo ideológico**: Detecta si el texto presenta una inclinación política o ideológica hacia alguna de las partes involucradas. Evalúa el nivel de sesgo en una escala de 1 (muy bajo) a 5 (muy alto). Agrega una breve justificación.
-#2. **Uso de estereotipos**: Indica si el texto usa generalizaciones, frases estigmatizantes o simplificaciones que puedan reforzar estereotipos. Evalúa en una escala de 1 a 5. Justifica brevemente.
-# se pueden agregar nuevos documentos a la revisión ya hecha?
-# como empezar a redactar el sgte avance (que cap, que contenido)?
-# un solo indicador y el resto texto
-# sintesis visual global
-# equibilibrio del texto 
-# sintesis
-# 1 resumen
-# 2 analisis del sesgo (indicador visual y en resumen escrito)
-# 3 actores y reseña
-# 4 articulos similares
-
-
-# circular: {'proporcion_sentimientos': {'NEG': 0.16666666666666666, 'POS': 0.0, 'NEU': 0.8333333333333334}
-# barra 'indice_polarizacion': 0.16666666666666666, color indicando 
-# resto gpt
-
-# tesis (documento)
-# 1 arquitectura de software y desarrollo(arquitectura -quienes son los usuarios- casos de uso - componentes - despliegue) (diagrama caso de uso y componenetes)
-# dentro de los componentes (mockup y diseño del reporte)
-# funcionamiento del agente (langchain - tools - prompt template)
-# 2 resultados (prueba del software, metricas , tablas , etc....) 
-# 3 pruebas de usuario (ellos eliguen las noticias)
-# (resumen del analisis critico ¿que info mostrar?)
-# pruebas (diseño y resultados) # definir metricas, tablas 
-
 from config import settings
 from datetime import datetime
 import chromadb
@@ -91,20 +62,51 @@ def analisis_profundo(text):
 
     return promedio
 
-
-
 # https://help.sesamm.com/article/32-sentiment-polarity
+
 def analisis_sentimiento(text):
+    """
+    Realiza un análisis de sentimiento a nivel de oración en un texto dado
+    y calcula la proporción de sentimientos (positivo, negativo, neutro)
+    y un índice de polaridad general.
+
+    Utiliza un modelo de análisis de sentimiento pre-entrenado en español
+    (finiteautomata/beto-sentiment-analysis) y Spacy para la segmentación
+    de oraciones.
+
+    Args:
+        text (str): El texto de entrada (ej., un artículo de noticias) a analizar.
+
+    Returns:
+        dict: Un diccionario que contiene:
+            - "proporcion_sentimientos" (dict): Un diccionario con la proporción
+            de oraciones clasificadas como "NEG" (negativas), "POS" (positivas)
+            y "NEU" (neutras).
+            - "indice_polarizacion" (float): Un valor entre -1 y 1 que indica
+            la polaridad general del texto. Un valor cercano a 1 indica una
+            polaridad positiva fuerte, -1 una polaridad negativa fuerte, y 0
+            una polaridad neutra o equilibrada.
+    """
+    # Define el nombre del modelo de Hugging Face para análisis de sentimiento en español.
     model_name = "finiteautomata/beto-sentiment-analysis"
+    # Carga el modelo pre-entrenado para clasificación de secuencias.
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    # Carga el tokenizador asociado al modelo para procesar el texto.
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # Crea un pipeline de análisis de sentimiento utilizando el modelo y el tokenizador cargados.
+    # Este pipeline simplifica la aplicación del modelo a los textos.
     sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+    # Carga el modelo de procesamiento de lenguaje natural de Spacy para español.
+    # Se utiliza para la segmentación de oraciones (dividir el texto en frases individuales).
     nlp = spacy.load("es_core_news_sm")
+    # Procesa el texto de entrada con Spacy para crear un objeto 'doc'.
     doc = nlp(text)
+    # Extrae cada oración del objeto 'doc' y las guarda en una lista.
+    # `.sents` es un iterador de oraciones y `.text.strip()` elimina espacios en blanco.
     frases = [sent.text.strip() for sent in doc.sents]
     res = []
     id = 1
-    
+    # Itera sobre cada oración extraída para realizar el análisis de sentimiento.
     for oracion in frases:
         x = sentiment_pipeline(oracion)[0]
         res.append({
@@ -117,7 +119,8 @@ def analisis_sentimiento(text):
     labels = [r["label"] for r in res]
     conteo = Counter(labels)
     total = len(res)
-
+    # Calcula la proporción de cada tipo de sentimiento sobre el total de oraciones.
+    # `.get(key, 0)` asegura que si una etiqueta no existe, su conteo sea 0 para evitar errores.
     proporcion = {
         "NEG": conteo.get("NEG", 0) / total,
         "POS": conteo.get("POS", 0) / total,
@@ -125,6 +128,9 @@ def analisis_sentimiento(text):
     } 
     pos = proporcion["POS"]
     neg = proporcion["NEG"]
+    
+    # Calcula el índice de polaridad.
+    # La fórmula (POS - NEG) / (POS + NEG) normaliza el valor entre -1 y 1.
     polaridad = (pos - neg) / (pos + neg)  
 
     resultado = {
@@ -138,6 +144,20 @@ def analisis_sentimiento(text):
 
 # Función para búsqueda en Wikipedia (funciona!)
 def wikipedia_search(query):
+    """
+    Realiza una búsqueda de una consulta específica en la Wikipedia en español
+    y devuelve un extracto introductorio del artículo encontrado.
+    Si no se encuentra información, retorna un mensaje predefinido.
+    Para evitar textos excesivamente largos, solo se devuelve el primer tercio del extracto.
+
+    Args:
+        query (str): El término de búsqueda para buscar en Wikipedia.
+
+    Returns:
+        str: El primer tercio del extracto introductorio del artículo de Wikipedia
+             en español que coincide con la consulta, o "No se encontró información
+             en Wikipedia." si la búsqueda no arroja resultados relevantes.
+    """
     response = requests.get(f"https://es.wikipedia.org/w/api.php", params={
         "action": "query",
         "format": "json",
@@ -152,11 +172,35 @@ def wikipedia_search(query):
     # Cortar el texto
     if extract != "No se encontró información en Wikipedia.":
         tercio_len = len(extract) // 3 
-        extract = extract[:tercio_len]  # Recorte del texto para no ocupar mucho
+        extract = extract[:tercio_len]  # Recorte del texto para no ocupar muchos tokens -> la info importante siempre esta al principio
     
     return extract
 
 def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg"):
+    """
+    Busca la primera imagen en Google Images para un nombre de persona dado,
+    la descarga y la guarda en un archivo local.
+
+    Utiliza la API de Búsqueda Personalizada de Google para la búsqueda de imágenes.
+    Requiere una clave de API (archivo .env) y un ID de motor de búsqueda personalizado.
+
+    Args:
+        nombre_persona (str): El nombre de la persona o entidad para la que se buscarán imágenes.
+        nombre_archivo (str, optional): El nombre del archivo local donde se guardará la imagen descargada.
+                                        Por defecto, la imagen se guarda como "imagen_resultado.jpg".
+
+    Returns:
+        str: Un mensaje que describe el resultado de la operación:
+             - La URL de la imagen encontrada si la búsqueda y descarga fueron exitosas.
+             - "No se encontraron imágenes para la consulta." si la API no devuelve resultados.
+             - Un mensaje de error detallado si ocurre alguna excepción durante el proceso.
+
+    Raises:
+        requests.exceptions.HTTPError: Se captura internamente si la petición a la API de Google
+                                       o la descarga de la imagen resultan en un error HTTP (ej., 404, 500).
+        Exception: Se captura internamente para cualquier otro error inesperado (ej., problemas de red,
+                   JSON inválido, problemas al guardar el archivo).
+    """
     api_key = settings.API_GOOGLE
     search_engine_id = settings.ID_GOOGLE
     url = "https://www.googleapis.com/customsearch/v1"
@@ -199,6 +243,26 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
 
 
 def buscar_por_embeddings(pregunta):
+
+    """
+    Realiza una búsqueda de similitud semántica en una colección de documentos
+    utilizando embeddings vectoriales.
+
+    Primero, convierte la pregunta del usuario en un vector (embedding). Luego,
+    busca los documentos más similares a este embedding en la base de datos
+    vectorial (`chromadb`). Devuelve la información de los documentos
+    encontrados (título, fecha, enlace) formateada como una cadena de texto.
+
+    Args:
+        pregunta (str): La pregunta del usuario que se utilizará para buscar
+                        documentos similares.
+
+    Returns:
+        str: Una cadena de texto que contiene la información formateada de los
+             documentos de noticias más relevantes encontrados. Si no se encuentran
+             documentos, retorna el mensaje "No se encontraron noticias similares.".
+    """
+
     pregunta_embedding = embeddings.embed_query(pregunta)
     resultados = doc_collection.query(
         query_embeddings=[pregunta_embedding],
@@ -404,8 +468,27 @@ agent_c = initialize_agent(
 )
 
 
-
 def getResponse(query):
+
+    """
+    Coordina y ejecuta múltiples análisis sobre un texto de consulta (noticia),
+    utilizando diferentes agentes de LangChain, un modelo de lenguaje directo
+    y una función de análisis de sentimiento personalizada.
+
+    Combina los resultados de estos análisis en un único diccionario y lo devuelve
+    como una respuesta JSON. Está diseñado para procesar el texto de una noticia
+    y extraer diversas perspectivas (sesgos, polarizacion y sentimientos) de forma orquestada.
+
+    Args:
+        query (str): El texto de la noticia o consulta a ser analizada.
+
+    Returns:
+        JSONResponse: Un objeto de respuesta HTTP que contiene un diccionario JSON
+                      con los resultados combinados de todos los análisis.
+                      Si ocurre un error al decodificar JSON de alguna respuesta,
+                      retorna un JSONResponse con un código de estado 500 y un mensaje de error.
+    """
+
     response_a = agent_a.run(prompt_template_a + "Noticia del usuario: " + query)
     print("paso 1")
     response_b = llm.predict(prompt_template_b + query)
@@ -428,6 +511,9 @@ def getResponse(query):
         return JSONResponse(content=combined)
 
     except json.JSONDecodeError as e:
+        # Si alguna de las respuestas (response_a, response_b, response_c) no es un JSON válido,
+        # se captura el error y se devuelve una respuesta HTTP con un código de estado 500
+        # y un mensaje de error que indica el problema.
         return JSONResponse(
             status_code=500,
             content={
