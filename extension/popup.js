@@ -3,6 +3,7 @@ let sentimientoChartInstance = null;
 let polarizacionChartInstance = null;
 let history = [];
 let textoCompartir;
+let contexto;
 
 document.addEventListener("DOMContentLoaded", () => {
   // Variables auxiliares
@@ -60,11 +61,13 @@ document.addEventListener("DOMContentLoaded", () => {
       canAccessResult = true;
       canAccessChat = true;
       canAccessShare = true;
+      
     }
   
     if (data.savedResult) {
       llenarResultados(data.savedResult);
       textoCompartir = data.savedResult;
+      contexto = data.savedText + " Resuldado del analisis: " + JSON.stringify(data.savedResult);
     }
   
     if (data.chatHistory && Array.isArray(data.chatHistory)) {
@@ -120,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    statusMsg.textContent = "⏳ Enviando...";
+    statusMsg.textContent = "⏳ Analizando, No haga click fuera ⚠️";
     
 
     try {
@@ -139,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
       llenarResultados(data)
       textoCompartir = data;
       chrome.storage.local.set({ savedResult: data });
-
+      contexto = text + "resultado del analisis: "+ resultText; //a
       canAccessResult = true;
       canAccessChat = true;
       canAccessShare = true;
@@ -191,7 +194,7 @@ document.getElementById("send").addEventListener("click", async () => {
   if (!input) return;
 
   if (firstMjs) {
-    history.push(["system", text]);  // Adjunta contexto
+    history.push(["system", contexto]);  // Adjunta contexto
     firstMjs = false;
   }
 

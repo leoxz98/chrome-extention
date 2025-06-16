@@ -20,7 +20,7 @@ def savedocs():
     import pandas as pd
     import uuid
     embeddings = OpenAIEmbeddings(openai_api_key=settings.API_GPT)
-    df = pd.read_csv("noticias2.csv",encoding="utf-8",sep=';')
+    df = pd.read_csv("noticias4.csv",encoding="utf-8",sep=';')
     print("xd")
     print(df.columns)
 

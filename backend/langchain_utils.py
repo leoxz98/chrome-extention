@@ -176,30 +176,21 @@ def wikipedia_search(query):
     
     return extract
 
-def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg"):
+def buscar_y_mostrar_imagen(nombre_persona):
     """
-    Busca la primera imagen en Google Images para un nombre de persona dado,
-    la descarga y la guarda en un archivo local.
+    Busca la primera imagen en Google Images para un nombre de persona dado
+    y devuelve solo la URL de la imagen sin descargarla ni guardarla localmente.
 
     Utiliza la API de Búsqueda Personalizada de Google para la búsqueda de imágenes.
-    Requiere una clave de API (archivo .env) y un ID de motor de búsqueda personalizado.
 
     Args:
         nombre_persona (str): El nombre de la persona o entidad para la que se buscarán imágenes.
-        nombre_archivo (str, optional): El nombre del archivo local donde se guardará la imagen descargada.
-                                        Por defecto, la imagen se guarda como "imagen_resultado.jpg".
 
     Returns:
-        str: Un mensaje que describe el resultado de la operación:
-             - La URL de la imagen encontrada si la búsqueda y descarga fueron exitosas.
-             - "No se encontraron imágenes para la consulta." si la API no devuelve resultados.
-             - Un mensaje de error detallado si ocurre alguna excepción durante el proceso.
-
-    Raises:
-        requests.exceptions.HTTPError: Se captura internamente si la petición a la API de Google
-                                       o la descarga de la imagen resultan en un error HTTP (ej., 404, 500).
-        Exception: Se captura internamente para cualquier otro error inesperado (ej., problemas de red,
-                   JSON inválido, problemas al guardar el archivo).
+        str: 
+            - La URL de la imagen encontrada si la búsqueda fue exitosa.
+            - "No se encontraron imágenes para la consulta." si la API no devuelve resultados.
+            - Un mensaje de error si ocurre alguna excepción durante el proceso.
     """
     api_key = settings.API_GOOGLE
     search_engine_id = settings.ID_GOOGLE
@@ -224,14 +215,6 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
         results = response.json()
         if "items" in results and len(results["items"]) > 0:
             url_imagen = results["items"][0]["link"]
-            
-            img_response = requests.get(url_imagen, stream=True, headers=headers)
-            img_response.raise_for_status()
-            
-            with open(nombre_archivo, "wb") as f:
-                f.write(img_response.content)
-            
-            imagen = Image.open(nombre_archivo)
             print("link foto")
             print(url_imagen)
             return f"Imagen encontrada en la URL: {url_imagen}"
@@ -240,6 +223,7 @@ def buscar_y_mostrar_imagen(nombre_persona, nombre_archivo="imagen_resultado.jpg
     
     except Exception as e:
         return f"Error: {str(e)}"
+
 
 
 def buscar_por_embeddings(pregunta):
@@ -266,7 +250,7 @@ def buscar_por_embeddings(pregunta):
     pregunta_embedding = embeddings.embed_query(pregunta)
     resultados = doc_collection.query(
         query_embeddings=[pregunta_embedding],
-        n_results=2
+        n_results=5
     )
 
     docs = resultados.get("documents", [[]])[0]
@@ -398,7 +382,7 @@ PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin nin
  """
 
 # Actores 
-prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identificar hasta 3 actores principales (personas) mencionados en la siguiente noticia. Para cada uno, debes:
+prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identificar hasta 3 actores principales (solo personas) mencionados en la siguiente noticia. Para cada uno, debes:
 
 1. Indicar su nombre completo.
 2. Determinar su postura frente al hecho (a favor o en contra, y por qué) en un máximo de 2 líneas. Usa únicamente el contenido de la noticia para esta parte.
