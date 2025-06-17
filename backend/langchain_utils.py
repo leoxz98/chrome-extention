@@ -87,26 +87,18 @@ def analisis_sentimiento(text):
             polaridad positiva fuerte, -1 una polaridad negativa fuerte, y 0
             una polaridad neutra o equilibrada.
     """
-    # Define el nombre del modelo de Hugging Face para análisis de sentimiento en español.
+    # Elimina los saltos de línea del texto
+    text = text.replace('\n', ' ').replace('\r', ' ')
+
     model_name = "finiteautomata/beto-sentiment-analysis"
-    # Carga el modelo pre-entrenado para clasificación de secuencias.
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
-    # Carga el tokenizador asociado al modelo para procesar el texto.
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Crea un pipeline de análisis de sentimiento utilizando el modelo y el tokenizador cargados.
-    # Este pipeline simplifica la aplicación del modelo a los textos.
     sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
-    # Carga el modelo de procesamiento de lenguaje natural de Spacy para español.
-    # Se utiliza para la segmentación de oraciones (dividir el texto en frases individuales).
     nlp = spacy.load("es_core_news_sm")
-    # Procesa el texto de entrada con Spacy para crear un objeto 'doc'.
     doc = nlp(text)
-    # Extrae cada oración del objeto 'doc' y las guarda en una lista.
-    # `.sents` es un iterador de oraciones y `.text.strip()` elimina espacios en blanco.
     frases = [sent.text.strip() for sent in doc.sents]
     res = []
     id = 1
-    # Itera sobre cada oración extraída para realizar el análisis de sentimiento.
     for oracion in frases:
         x = sentiment_pipeline(oracion)[0]
         res.append({
@@ -119,8 +111,6 @@ def analisis_sentimiento(text):
     labels = [r["label"] for r in res]
     conteo = Counter(labels)
     total = len(res)
-    # Calcula la proporción de cada tipo de sentimiento sobre el total de oraciones.
-    # `.get(key, 0)` asegura que si una etiqueta no existe, su conteo sea 0 para evitar errores.
     proporcion = {
         "NEG": conteo.get("NEG", 0) / total,
         "POS": conteo.get("POS", 0) / total,
@@ -128,17 +118,15 @@ def analisis_sentimiento(text):
     } 
     pos = proporcion["POS"]
     neg = proporcion["NEG"]
-    
-    # Calcula el índice de polaridad.
-    # La fórmula (POS - NEG) / (POS + NEG) normaliza el valor entre -1 y 1.
-    polaridad = (pos - neg) / (pos + neg)  
-
+    polaridad = (pos - neg) / (pos + neg + 1e-6)
+  
     resultado = {
         "proporcion_sentimientos": proporcion,
         "indice_polarizacion": polaridad  
     }
 
     return resultado
+
 
 
 
@@ -250,7 +238,7 @@ def buscar_por_embeddings(pregunta):
     pregunta_embedding = embeddings.embed_query(pregunta)
     resultados = doc_collection.query(
         query_embeddings=[pregunta_embedding],
-        n_results=5
+        n_results=3
     )
 
     docs = resultados.get("documents", [[]])[0]
@@ -382,14 +370,14 @@ PASO 3: Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura, sin nin
  """
 
 # Actores 
-prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identificar hasta 3 actores principales (solo personas) mencionados en la siguiente noticia. Para cada uno, debes:
+prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identificar hasta 3 personas principales (no grupos ni organizaciones) mencionadas en la siguiente noticia. Para cada una, debes:
 
 1. Indicar su nombre completo.
 2. Determinar su postura frente al hecho (a favor o en contra, y por qué) en un máximo de 2 líneas. Usa únicamente el contenido de la noticia para esta parte.
-3. Buscar el URL de una imagen representativa usando la herramienta `buscar_y_mostrar_imagen` (el input debe ser su nombre completo como string).
-4. Consultar su perfil profesional en Wikipedia usando la herramienta `wikipedia_search`, también con su nombre completo en formato Nombre_Apellido.
+3. Llamar a la herramienta `buscar_y_mostrar_imagen` con el nombre completo de la persona como string para obtener una URL de imagen.
+4. Llamar a la herramienta `wikipedia_search` con el nombre completo para obtener su perfil profesional.
 
-**Tu respuesta debe ser exclusivamente en formato JSON**, con la siguiente estructura:
+Responde únicamente en el siguiente formato JSON:
 
 {
   "actores_principales": [
@@ -403,13 +391,13 @@ prompt_template_c = """Eres un analista experto en noticias. Tu tarea es identif
   ]
 }
 
-Instrucciones importantes:
-- Solo incluye personas. No incluyas organizaciones, instituciones ni entidades colectivas.
-- Si hay menos de 3 personas relevantes, incluye solo las que correspondan.
-- No utilices ninguna herramienta que no sea `buscar_y_mostrar_imagen` o `wikipedia_search`, y solo para los campos indicados.
-- **No agregues explicaciones fuera del JSON.**
-
+Instrucciones:
+- Solo incluye personas (no organizaciones).
+- Si hay menos de 3 personas, incluye solo las que correspondan.
+- Utiliza solamente las herramientas `wikipedia_search` y `buscar_y_mostrar_imagen`.
+- No incluyas explicaciones ni texto fuera del JSON final.
 """
+
 
 
 # Configuración del modelo
